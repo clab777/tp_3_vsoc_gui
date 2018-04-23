@@ -11,4 +11,4 @@ mvn spring-boot:run
 run VSocApplication.java as springboot application
 
 # 3. test the application
-open the browser and type: http://http://localhost:8000/vsoc/
+open the browser and type: http://localhost:8000/vsoc/
