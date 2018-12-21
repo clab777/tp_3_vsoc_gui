@@ -51,6 +51,25 @@ mavenNode {
 
 if (utils.isCD()) {
   node {
+  stage('Build') {
+    openshiftBuild(buildConfig: 'my-build-config', showBuildLogs: 'true')
+  }
+  stage('Deploy') {
+    openshiftDeploy(deploymentConfig: 'my-deployment-config')
+  }
+}
+node('maven') {
+  stage('Checkout') {
+    checkout scm
+  }
+  stage('Build') {
+    sh 'mvn install'
+  }
+  stage('Unit Test') {
+    sh 'mvn test'
+  }
+}
+  node {
     stage('Rollout to Stage') {
       unstash stashName
       setupScript?.setupEnvironmentPre(envStage)
