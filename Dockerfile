@@ -1,4 +1,4 @@
-FROM tomcat:9
-
-#copy the war file into tomcat server(s)
-COPY target/*.war /usr/local/tomcat/webapps/
+FROM openjdk:8
+EXPOSE 8080
+ADD target/vsoc.jar vsoc.jar
+ENTRYPOINT ["java", "-jar", "/vsoc.jar"]
