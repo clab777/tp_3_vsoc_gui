@@ -9,14 +9,19 @@ target/
 
 ### IntelliJ IDEA ###
 .idea
-*.iws
+.iws
 *.iml
 *.ipr
+.idea/modules.xml
+.idea/workspace.xml
+/**
 
+*.classpath
 ### NetBeans ###
 nbproject/private/
 build/
 nbbuild/
 dist/
 nbdist/
+.idea/
 .nb-gradle/
