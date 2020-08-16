@@ -28,10 +28,10 @@ pipeline {
             }
         }
 
-        stage ('Deployment Stage') {
+        /* stage ('Deployment Stage') {
             steps {
                 sh 'mvn deploy'
             }
-        }
+        } */
     }
 }
