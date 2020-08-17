@@ -4,7 +4,7 @@
 	<modelVersion>4.0.0</modelVersion>
 
 	<groupId>com.stthomas.seis.vsoc.gui</groupId>
-	<artifactId>clab-contacts</artifactId>
+	<artifactId>vsoc-jdi</artifactId>
 	<version>0.0.1-SNAPSHOT</version>
 	<packaging>jar</packaging>
 
