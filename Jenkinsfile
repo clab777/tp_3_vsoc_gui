@@ -1,13 +1,9 @@
 pipeline {
     agent any
-    /*
+
     tools {
         maven 'Maven_3.6.3_1'
     }
-    */
-
-    // ** NOTE: This 'maven-3.5.2' Maven tool must be configured in the Jenkins Global Configuration.
-	 def mvnHome = tool 'Maven_3.6.3_1'
 
 
 	 // holds reference to docker image
