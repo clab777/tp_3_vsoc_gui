@@ -1,29 +1,31 @@
-#!groovy
-
 pipeline {
-    environment {
-        JAVA_TOOL_OPTIONS = "-Duser.home=/var/maven"
-    }
-    agent {
+  // "Top-level" agent is assigned to docker slaves via Jenkins pipeline configuration
+  agent none
+
+  stages {
+    stage('Docker node test') {
+      agent {
         docker {
-            image "maven:3.6.0-jdk-13"
-            args "-v /tmp/maven:/var/maven/.m2 -e MAVEN_CONFIG=/var/maven/.m2"
+          image 'node:7-alpine'
+          args '--name docker-node' // list any args
         }
+      }
+      steps {
+        // Steps run in node:7-alpine docker container on docker slave
+        sh 'node --version'
+      }
     }
 
-    stages {
-        stage("Build") {
-            steps {
-                sh "mvn -version"
-                sh "mvn clean install"
-            }
+    stage('Docker maven test') {
+      agent {
+        docker {
+          image 'maven:3-alpine'
         }
+      }
+      steps {
+        // Steps run in maven:3-alpine docker container on docker slave
+        sh 'mvn --version'
+      }
     }
-/*
-    post {
-        always {
-            cleanWs()
-        }
-    }
-    */
+  }
 }
