@@ -1,5 +1,10 @@
-node {
+pipeline {
 
+    agent{
+        dockerfile{
+            label "docker"
+        }
+    }
     environment {
 	    // holds reference to docker image
 	    IMAGE = readMavenPom().getArtifactId()
@@ -9,6 +14,7 @@ node {
     checkout scm
 
     docker.withRegistry('https://registry.hub.docker.com', 'JenkinsDockerCredentials') {
+        echo "building customImage..."
 
         def customImage = docker.build("ctraore/${IMAGE}-v${IMAGE_VERSION}:${IMAGE_TAG}")
 
