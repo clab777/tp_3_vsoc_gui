@@ -1,32 +1,37 @@
 pipeline {
+  // Assign to docker slave(s) label, could also be 'any'
+  agent {
+    label 'docker'
+  }
 
-    environment {
-        JAVA_TOOL_OPTIONS = "-Duser.home=/home/jenkins"
-        // holds reference to docker image
-        IMAGE = readMavenPom().getArtifactId()
-        IMAGE_VERSION = readMavenPom().getVersion()
-        IMAGE_TAG = "${env.BUILD_NUMBER}"
+  stages {
+    stage('Docker node test') {
+      agent {
+        docker {
+          // Set both label and image
+          label 'docker'
+          image 'node:7-alpine'
+          args '--name docker-node' // list any args
+        }
+      }
+      steps {
+        // Steps run in node:7-alpine docker container on docker slave
+        sh 'node --version'
+      }
     }
 
-    agent{
-        dockerfile {
-            label 'docker'
-            args '-v /tmp/maven:/home/jenkins/.m2 -e MAVEN_CONFIG=/home/jenkins/.m2'
+    stage('Docker maven test') {
+      agent {
+        docker {
+          // Set both label and image
+          label 'docker'
+          image 'maven:3-alpine'
         }
+      }
+      steps {
+        // Steps run in maven:3-alpine docker container on docker slave
+        sh 'mvn --version'
+      }
     }
-     stages {
-        stage ("Build") {
-            steps {
-                sh "ssh -V"
-                sh "mvn -version"
-                sh "mvn clean install"
-            }
-        }
-     }
-
-     post {
-        always {
-            cleanWs()
-        }
-     }
+  }
 }
