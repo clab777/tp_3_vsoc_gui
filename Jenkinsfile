@@ -42,20 +42,20 @@ pipeline {
         } */
 
         stage('Deploy Docker Image') {
-            // deploy docker image to nexus
+             steps {
+                echo "Docker Image Tag Name: ${DOCKER_IMAGE_TAG}"
 
-            echo "Docker Image Tag Name: ${DOCKER_IMAGE_TAG}"
+                sh "docker stop ${DOCKER_IMAGE}"
 
-            sh "docker stop ${DOCKER_IMAGE}"
+                sh "docker rm ${DOCKER_IMAGE}"
 
-             sh "docker rm ${DOCKER_IMAGE}"
+                sh "docker run --name ${DOCKER_IMAGE} -d -p 2222:2222 ${DOCKER_IMAGE}:${env.BUILD_NUMBER}"
 
-            sh "docker run --name ${DOCKER_IMAGE} -d -p 2222:2222 ${DOCKER_IMAGE}:${env.BUILD_NUMBER}"
-
-          // docker.withRegistry('https://registry.hub.docker.com', 'docker-hub-credentials') {
-          //    dockerImage.push("${env.BUILD_NUMBER}")
-          //      dockerImage.push("latest")
-          //  }
+              // docker.withRegistry('https://registry.hub.docker.com', 'docker-hub-credentials') {
+              //    dockerImage.push("${env.BUILD_NUMBER}")
+              //      dockerImage.push("latest")
+              //  }
+              }
         }
     }
 }
