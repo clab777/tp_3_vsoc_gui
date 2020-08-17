@@ -1,33 +1,28 @@
+#!groovy
+
 pipeline {
-  // Assign to docker slave(s) label, could also be 'any'
-  agent any
-
-  stages {
-    stage('Docker node test') {
-      agent {
+    environment {
+        JAVA_TOOL_OPTIONS = "-Duser.home=/var/maven"
+    }
+    agent {
         docker {
-          // Set both label and image
-          image 'node:7-alpine'
-          args '--name docker-node' // list any args
+            image "maven:3.6.0-jdk-13"
+            args "-v /tmp/maven:/var/maven/.m2 -e MAVEN_CONFIG=/var/maven/.m2"
         }
-      }
-      steps {
-        // Steps run in node:7-alpine docker container on docker slave
-        sh 'node --version'
-      }
     }
 
-    stage('Docker maven test') {
-      agent {
-        docker {
-          // Set both label and image
-          image 'maven:3-alpine'
+    stages {
+        stage("Build") {
+            steps {
+                sh "mvn -version"
+                sh "mvn clean install"
+            }
         }
-      }
-      steps {
-        // Steps run in maven:3-alpine docker container on docker slave
-        sh 'mvn --version'
-      }
     }
-  }
-} 
+
+    post {
+        always {
+            cleanWs()
+        }
+    }
+}
