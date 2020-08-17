@@ -1,8 +1,9 @@
-node {
+pipeline {
 
     agent{
         dockerfile{
             label "docker"
+            args "-v /tmp/maven:/home/jenkins/.m2 -e MAVEN_CONFIG=/home/jenkins/.m2"
         }
     }
     environment {
@@ -11,16 +12,50 @@ node {
 	    IMAGE_VERSION = readMavenPom().getVersion()
 	    IMAGE_TAG = "${env.BUILD_NUMBER}"
     }
-    checkout scm
+    stages {
 
-    docker.withRegistry('https://registry.hub.docker.com', 'JenkinsDockerCredentials') {
-        echo "building customImage..."
+        stage ('Compile Stage') {
 
-        def customImage = docker.build("ctraore/${IMAGE}-v${IMAGE_VERSION}:${IMAGE_TAG}")
+            steps {
+                sh 'mvn clean compile'
+            }
+        }
 
-        echo "customImage: ${customImage}"
+        stage ('Testing Stage') {
 
-        /* Push the container to the custom Registry */
-        customImage.push()
+            steps {
+                sh 'mvn test'
+            }
+        }
+
+        stage ('Building Stage') {
+
+            steps {
+                sh 'mvn install'
+            }
+        }
+
+        /* stage ('Deployment Stage') {
+            steps {
+                sh 'mvn deploy'
+            }
+        } */
+
+        stage('Deploy Docker Image') {
+             steps {
+                echo "Docker Image Tag Name: ${DOCKER_IMAGE_TAG}"
+
+                sh "docker stop ${DOCKER_IMAGE}"
+
+                sh "docker rm ${DOCKER_IMAGE}"
+
+                sh "docker run --name ${DOCKER_IMAGE} -d -p 2222:2222 ${DOCKER_IMAGE}:${env.BUILD_NUMBER}"
+
+              // docker.withRegistry('https://registry.hub.docker.com', 'JenkinsDockerCredentials') {
+              //    dockerImage.push("${env.BUILD_NUMBER}")
+              //      dockerImage.push("latest")
+              //  }
+              }
+        }
     }
 }
