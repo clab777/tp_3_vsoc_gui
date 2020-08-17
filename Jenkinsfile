@@ -43,7 +43,7 @@ pipeline {
 
         stage('Deploy Docker Image') {
              steps {
-                echo "Docker Image Tag Name: ${DOCKER_IMAGE_TAG}"
+                //echo "Docker Image Tag Name: ${DOCKER_IMAGE_TAG}"
 
                 sh "docker stop ${DOCKER_IMAGE}"
 
