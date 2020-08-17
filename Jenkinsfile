@@ -1,11 +1,11 @@
 pipeline {
 
-   environment {
+    environment {
         JAVA_TOOL_OPTIONS = "-Duser.home=/var/maven"
-	    // holds reference to docker image
-	    IMAGE = readMavenPom().getArtifactId()
-	    IMAGE_VERSION = readMavenPom().getVersion()
-	    IMAGE_TAG = "${env.BUILD_NUMBER}"
+        // holds reference to docker image
+        IMAGE = readMavenPom().getArtifactId()
+        IMAGE_VERSION = readMavenPom().getVersion()
+        IMAGE_TAG = "${env.BUILD_NUMBER}"
     }
 
     agent{
@@ -16,17 +16,17 @@ pipeline {
         }
     }
      stages {
-
         stage ("Build") {
             steps {
                 sh "mvn -version"
                 sh "mvn clean install"
             }
         }
+     }
 
-      post {
+     post {
         always {
             cleanWs()
         }
-      }
+     }
 }
