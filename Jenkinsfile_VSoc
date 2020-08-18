@@ -1,8 +1,22 @@
+#!groovy
+import groovy.json.JsonOutput
+import groovy.json.JsonSlurper
+
 node {
+
+     server = Artifactory.server "artifactory"
+     buildInfo = Artifactory.newBuildInfo()
+     buildInfo.env.capture = true
+    
+    // we need to set a newer JVM for Sonar
+    env.JAVA_HOME="${tool 'Java SE DK 8u131'}"
+    env.PATH="${env.JAVA_HOME}/bin:${env.PATH}"
+    
    def app
    def sonarUrl = 'sonar.host.url=http://localhost:9000'
    def mvn = tool (name: 'maven3', type: 'maven') + '/bin/mvn'
    
+
     environment {
         JAVA_TOOL_OPTIONS = "-Duser.home=/var/maven"
         JAVA_TOOL_OPTIONS = "-Duser.home=/home/jenkins"
@@ -11,42 +25,202 @@ node {
         IMAGE_VERSION = readMavenPom().getVersion()
         IMAGE_TAG = "${env.BUILD_NUMBER}"
     }
+
+
+    // pull request or feature branch
+    if  (env.BRANCH_NAME != 'master') {
+        checkout()
+        build()
+        unitTest()
+        // test whether this is a regular branch build or a merged PR build
+        if (!isPRMergeBuild()) {
+            preview()
+            sonarServer()
+            allCodeQualityTests()
+            dockerBuild()
+            dockerPublish()
+        } else {
+            // Pull request
+            sonarPreview()
+        }
+    } // master branch / production
+    else { 
+        checkout()
+        build()
+        allTests()
+        preview()
+        sonarServer()
+        allCodeQualityTests()
+        dockerBuild()
+        dockerPublish()
+        //preProduction()
+        //manualPromotion()
+        //production()
+    }
+}
+
+def isPRMergeBuild() {
+    return (env.BRANCH_NAME ==~ /^PR-\d+$/)
+}
+
+def sonarPreview() {
+    stage('SonarQube Preview') {
+        prNo = (env.BRANCH_NAME=~/^PR-(\d+)$/)[0][1]
+        mvn "org.jacoco:jacoco-maven-plugin:prepare-agent install -Dmaven.test.failure.ignore=true -Pcoverage-per-test"
+        withCredentials([[$class: 'StringBinding', credentialsId: 'GITHUB_SONAR_TOKEN', variable: 'GITHUB_SONAR_TOKEN']]) {
+            githubToken=env.GITHUB_SONAR_TOKEN
+            repoSlug=getRepoSlug()
+            withSonarQubeEnv('SonarQube Octodemoapps') {
+                mvn "-Dsonar.analysis.mode=preview -Dsonar.github.pullRequest=${prNo} -Dsonar.github.oauth=${githubToken} -Dsonar.github.repository=${repoSlug} -Dsonar.github.endpoint=https://api.github.com/ org.sonarsource.scanner.maven:sonar-maven-plugin:3.2:sonar"
+            }
+        }
+    } 
+}
     
-    stage('Clone repository') {
-        /* Cloning the Repository to our Workspace */
-        checkout scm
+def sonarServer() {
+    stage('SonarQube Server') {
+        mvn "org.jacoco:jacoco-maven-plugin:prepare-agent install -Dmaven.test.failure.ignore=true -Pcoverage-per-test"
+        withSonarQubeEnv('SonarQube Octodemoapps') {
+            mvn "org.sonarsource.scanner.maven:sonar-maven-plugin:3.2:sonar"
+        }
+        
+        context="sonarqube/qualitygate"
+        setBuildStatus ("${context}", 'Checking Sonarqube quality gate', 'PENDING')
+        timeout(time: 1, unit: 'MINUTES') { // Just in case something goes wrong, pipeline will be killed after a timeout
+            def qg = waitForQualityGate() // Reuse taskId previously collected by withSonarQubeEnv
+            if (qg.status != 'OK') {
+                setBuildStatus ("${context}", "Sonarqube quality gate fail: ${qg.status}", 'FAILURE')
+                error "Pipeline aborted due to quality gate failure: ${qg.status}"
+            } else {
+                setBuildStatus ("${context}", "Sonarqube quality gate pass: ${qg.status}", 'SUCCESS')
+            }    
+        }
+    }
+}
+    
+
+
+
+def checkout () {
+    stage 'Checkout code'
+    context="continuous-integration/jenkins/"
+    context += isPRMergeBuild()?"pr-merge/checkout":"branch/checkout"
+    checkout scm
+    setBuildStatus ("${context}", 'Checking out completed', 'SUCCESS')
+}
+
+def build () {
+    stage 'Build'
+    mvn 'clean install -DskipTests=true -Dmaven.javadoc.skip=true -Dcheckstyle.skip=true -B -V'
+}
+
+
+def unitTest() {
+    stage 'Unit tests'
+    mvn 'test -B -Dmaven.javadoc.skip=true -Dcheckstyle.skip=true'
+    if (currentBuild.result == "UNSTABLE") {
+        sh "exit 1"
+    }
+}
+
+def allTests() {
+    stage 'All tests'
+    // don't skip anything
+    mvn 'test -B'
+    step([$class: 'JUnitResultArchiver', testResults: '**/target/surefire-reports/TEST-*.xml'])
+    if (currentBuild.result == "UNSTABLE") {
+        // input "Unit tests are failing, proceed?"
+        sh "exit 1"
+    }
+}
+
+def allCodeQualityTests() {
+    stage 'Code Quality'
+    lintTest()
+    coverageTest()
+}
+
+def lintTest() {
+    context="continuous-integration/jenkins/linting"
+    setBuildStatus ("${context}", 'Checking code conventions', 'PENDING')
+    lintTestPass = true
+
+    try {
+        mvn 'verify -DskipTests=true'
+    } catch (err) {
+        setBuildStatus ("${context}", 'Some code conventions are broken', 'FAILURE')
+        lintTestPass = false
+    } finally {
+        if (lintTestPass) setBuildStatus ("${context}", 'Code conventions OK', 'SUCCESS')
+    }
+}
+
+def coverageTest() {
+    context="continuous-integration/jenkins/coverage"
+    setBuildStatus ("${context}", 'Checking code coverage levels', 'PENDING')
+
+    coverageTestStatus = true
+
+    try {
+        mvn 'cobertura:check'
+    } catch (err) {
+        setBuildStatus("${context}", 'Code coverage below 90%', 'FAILURE')
+        throw err
     }
 
-   stage('Mvn Package'){
-       // Build using maven
-       sh "${mvn} clean package"
-   }
-   
+    setBuildStatus ("${context}", 'Code coverage above 90%', 'SUCCESS')
 
+}
 
-  stage('SonarQube analysis') {
-    withCredentials([string(credentialsId: 'sonarqubeCredentials', installationName: 'sonar.host.url=http://localhost:9000')]) { 
-      sh 'mvn org.sonarsource.scanner.maven:sonar-maven-plugin:3.7.0.1746:sonar'
+def preview() {
+    stage name: 'Deploy to Preview env', concurrency: 1
+    def herokuApp = "${env.HEROKU_PREVIEW}"
+    def id = createDeployment(getBranch(), "preview", "Deploying branch to test")
+    echo "Deployment ID: ${id}"
+    if (id != null) {
+        setDeploymentStatus(id, "pending", "https://${herokuApp}.herokuapp.com/", "Pending deployment to test");
+        herokuDeploy "${herokuApp}"
+        setDeploymentStatus(id, "success", "https://${herokuApp}.herokuapp.com/", "Successfully deployed to test");
     }
-  }
-   
-   
-   stage('Mvn Install'){
-      // Build using maven
-      sh "${mvn} clean install"
-   }
-   
-    stage('Build image') {
-        /* This builds the actual image */
-        sh "docker build -t ctraore/${IMAGE}:${IMAGE_TAG} ."
-    }
+    mvn 'deploy -DskipTests=true'
+}
 
-   
 
-    stage('Push image') {
-        withCredentials([string(credentialsId: 'jenkinsDockerCredentials', variable: 'dockerHubPwd')]) {
-            sh "docker login -u ctraore -p ${dockerHubPwd}"
-        } 
-        sh "docker push ctraore/${IMAGE}:${IMAGE_TAG}"
+def dockerBuild () {
+    stage 'Build image'
+    sh "docker build -t ctraore/${IMAGE}:${IMAGE_TAG} ."
+}
+
+def dockerPublish () {
+    stage 'Publish image'
+    withCredentials([string(credentialsId: 'jenkinsDockerCredentials', variable: 'dockerHubPwd')]) {
+        sh "docker login -u ctraore -p ${dockerHubPwd}"
+    } 
+    sh "docker push ctraore/${IMAGE}:${IMAGE_TAG}"
+}
+
+
+def mvn(args) {
+    withMaven(
+        // Maven installation declared in the Jenkins "Global Tool Configuration"
+        maven: 'maven3',
+        // Maven settings.xml file defined with the Jenkins Config File Provider Plugin
+        
+        // settings.xml referencing the GitHub Artifactory repositories
+         mavenSettingsConfig: '0e94d6c3-b431-434f-a201-7d7cda7180cb',
+        // we do not need to set a special local maven repo, take the one from the standard box
+        //mavenLocalRepo: '.repository'
+        ) {
+        // Run the maven build
+        sh "mvn $args -Dmaven.test.failure.ignore"
     }
+}
+
+
+
+def getRepoSlug() {
+    tokens = "${env.JOB_NAME}".tokenize('/')
+    org = tokens[tokens.size()-3]
+    repo = tokens[tokens.size()-2]
+    return "${org}/${repo}"
 }
