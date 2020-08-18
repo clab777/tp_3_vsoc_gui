@@ -49,13 +49,13 @@ node {
         //manualPromotion()
         //production()
     }
-}
+//}
 
-def isPRMergeBuild() {
+isPRMergeBuild() {
     return (env.BRANCH_NAME ==~ /^PR-\d+$/)
 }
 
-def sonarPreview() {
+ sonarPreview() {
     stage('SonarQube Preview') {
         prNo = (env.BRANCH_NAME=~/^PR-(\d+)$/)[0][1]
         sh "${mvn} org.jacoco:jacoco-maven-plugin:prepare-agent install -Dmaven.test.failure.ignore=true -Pcoverage-per-test"
@@ -69,7 +69,7 @@ def sonarPreview() {
     } 
 }
     
-def sonarServer() {
+ sonarServer() {
     stage('SonarQube Server') {
         sh "${mvn} org.jacoco:jacoco-maven-plugin:prepare-agent install -Dmaven.test.failure.ignore=true -Pcoverage-per-test"
         withSonarQubeEnv('SonarQube Octodemoapps') {
@@ -88,30 +88,22 @@ def sonarServer() {
     }
 }
 
-def mvn(args) {
-    withMaven(
-        // Maven installation declared in the Jenkins "Global Tool Configuration"
-        maven: 'maven3',type: 'maven') + '/bin/mvn') {
-        // Run the maven build
-        sh "mvn $args -Dmaven.test.failure.ignore"
-    }
-}
 
 
-def checkout () {
+ checkout () {
     stage 'Checkout code'
     context="continuous-integration/jenkins/"
     context += isPRMergeBuild()?"pr-merge/checkout":"branch/checkout"
     checkout scm
 }
 
-def build () {
+ build () {
     stage 'Build'
     sh "${mvn} clean install -DskipTests=true -Dmaven.javadoc.skip=true -Dcheckstyle.skip=true -B -V"
 }
 
 
-def unitTest() {
+ unitTest() {
     stage 'Unit tests'
     sh "${mvn} test -B -Dmaven.javadoc.skip=true -Dcheckstyle.skip=true"
     if (currentBuild.result == "UNSTABLE") {
@@ -119,7 +111,7 @@ def unitTest() {
     }
 }
 
-def allTests() {
+ allTests() {
     stage 'All tests'
     // don't skip anything
     sh "${mvn} test -B"
@@ -130,13 +122,13 @@ def allTests() {
     }
 }
 
-def allCodeQualityTests() {
+ allCodeQualityTests() {
     stage 'Code Quality'
     lintTest()
     coverageTest()
 }
 
-def lintTest() {
+ lintTest() {
     context="continuous-integration/jenkins/linting"
     lintTestPass = true
 
@@ -149,7 +141,7 @@ def lintTest() {
     }
 }
 
-def coverageTest() {
+ coverageTest() {
     context="continuous-integration/jenkins/coverage"
     coverageTestStatus = true
 
@@ -163,7 +155,7 @@ def coverageTest() {
 
 }
 
-def preview() {
+ preview() {
     stage name: 'Deploy to Preview env', concurrency: 1
     def herokuApp = "${env.HEROKU_PREVIEW}"
     def id = createDeployment(getBranch(), "preview", "Deploying branch to test")
@@ -172,12 +164,12 @@ def preview() {
 }
 
 
-def dockerBuild () {
+ dockerBuild () {
     stage 'Build image'
     sh "docker build -t ctraore/${IMAGE}:${IMAGE_TAG} ."
 }
 
-def dockerPublish () {
+ dockerPublish () {
     stage 'Publish image'
     withCredentials([string(credentialsId: 'jenkinsDockerCredentials', variable: 'dockerHubPwd')]) {
         sh "docker login -u ctraore -p ${dockerHubPwd}"
@@ -189,7 +181,7 @@ def dockerPublish () {
 
 
 
-def getRepoSlug() {
+ getRepoSlug() {
     tokens = "${env.JOB_NAME}".tokenize('/')
     org = tokens[tokens.size()-3]
     repo = tokens[tokens.size()-2]
