@@ -27,7 +27,7 @@ node {
       withCredentials([usernameColonPassword(credentialsId: 'sonarqubeCredentials', variable: 'USERPASS')]) {
         sh '''
           set +x
-          curl -u "$USERPASS" ${sonarUrl} > output
+          curl ${sonarUrl} -u "$USERPASS" > output
         '''
       }
    }
