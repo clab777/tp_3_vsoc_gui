@@ -86,9 +86,16 @@ def sonarServer() {
             }    
         }
     }
-//}
- 
+}
 
+def mvn(args) {
+    withMaven(
+        // Maven installation declared in the Jenkins "Global Tool Configuration"
+        maven: 'maven3',type: 'maven') + '/bin/mvn') {
+        // Run the maven build
+        sh "mvn $args -Dmaven.test.failure.ignore"
+    }
+}
 
 
 def checkout () {
