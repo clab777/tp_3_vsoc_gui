@@ -1,0 +1,51 @@
+node {
+   def app
+   def sonarUrl = 'sonar.host.url=http://localhost:9000'
+   def mvn = tool (name: 'maven3', type: 'maven') + '/bin/mvn'
+   
+    environment {
+        JAVA_TOOL_OPTIONS = "-Duser.home=/var/maven"
+        JAVA_TOOL_OPTIONS = "-Duser.home=/home/jenkins"
+        // holds reference to docker image
+        IMAGE = readMavenPom().getArtifactId()
+        IMAGE_VERSION = readMavenPom().getVersion()
+        IMAGE_TAG = "${env.BUILD_NUMBER}"
+    }
+    
+    stage('Clone repository') {
+        /* Cloning the Repository to our Workspace */
+        checkout scm
+    }
+
+   stage('Mvn Package'){
+       // Build using maven
+       sh "${mvn} clean package"
+   }
+   
+   stage('Sonar Publish'){
+      withCredentials([string(credentialsId: 'sonarqubeCredentials', variable: 'sonarPwd')]) {
+        def sonarPwd = "sonar.login=${sonarPwd}"
+        sh "${mvn} sonar:sonar -D${sonarUrl}  -D${sonarPwd}"
+      }      
+   }
+   
+   
+   stage('Mvn Install'){
+      // Build using maven
+      sh "${mvn} clean install"
+   }
+   
+    stage('Build image') {
+        /* This builds the actual image */
+        sh "docker build -t ctraore/${IMAGE}:${IMAGE_TAG} .")
+    }
+
+   
+
+    stage('Push image') {
+        withCredentials([string(credentialsId: 'jenkinsDockerCredentials', variable: 'dockerHubPwd')]) {
+            sh "docker login -u ctraore -p ${dockerHubPwd}"
+        } 
+        sh "docker push ctraore/${IMAGE}:${IMAGE_TAG}"
+    }
+}
