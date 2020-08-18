@@ -1,6 +1,14 @@
 node {
     def app
-
+    environment {
+        JAVA_TOOL_OPTIONS = "-Duser.home=/var/maven"
+        JAVA_TOOL_OPTIONS = "-Duser.home=/home/jenkins"
+        // holds reference to docker image
+        IMAGE = readMavenPom().getArtifactId()
+        IMAGE_VERSION = readMavenPom().getVersion()
+        IMAGE_TAG = "${env.BUILD_NUMBER}"
+    }
+	
     stage('Clone repository') {
         /* Cloning the Repository to our Workspace */
 
