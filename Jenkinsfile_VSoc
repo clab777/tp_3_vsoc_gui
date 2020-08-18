@@ -23,10 +23,13 @@ node {
    }
    
    stage('Sonar Publish'){
-      withCredentials([string(credentialsId: 'sonarqubeCredentials', variable: 'sonarPwd')]) {
-        def sonarPwd = "sonar.login=${sonarPwd}"
-        sh "${mvn} sonar:sonar -D${sonarUrl}  -D${sonarPwd}"
-      }      
+      
+      withCredentials([usernameColonPassword(credentialsId: 'sonarqubeCredentials', variable: 'USERPASS')]) {
+        sh '''
+          set +x
+          curl -u "$USERPASS" ${sonarUrl} > output
+        '''
+      }
    }
    
    
@@ -37,7 +40,7 @@ node {
    
     stage('Build image') {
         /* This builds the actual image */
-        sh "docker build -t ctraore/${IMAGE}:${IMAGE_TAG} ."
+        sh "docker build -t ctraore/${IMAGE}:${IMAGE_TAG} .")
     }
 
    
