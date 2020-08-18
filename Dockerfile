@@ -1,3 +1,11 @@
-FROM node:14-alpine
+FROM maven:3.6.0-jdk-13
 
-RUN apk add -U subversion
+RUN useradd -m -u 1000 -s /bin/bash jenkins
+
+RUN yum install -y openssh-clients
+
+EXPOSE 8080
+
+ADD target/vsoc-jdi.jar vsoc-jdi.jar
+
+ENTRYPOINT ["java", "-jar", "/vsoc-jdi.jar"]
