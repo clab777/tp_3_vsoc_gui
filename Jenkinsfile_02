@@ -1,23 +1,29 @@
+#!groovy
+
 pipeline {
-  agent {
-    docker {
-      image 'node:6-alpine'
-      args '-p 3000:3000'
+    environment {
+        JAVA_TOOL_OPTIONS = "-Duser.home=/var/maven"
     }
-  }
-  environment {
-    CI = 'true'
-  }
-  stages {
-    stage('Build') {
-      steps {
-        sh 'npm install'
-      }
+    agent {
+        docker {
+            image "maven:3.6.0-jdk-13"
+            label "docker"
+            args "-v /tmp/maven:/var/maven/.m2 -e MAVEN_CONFIG=/var/maven/.m2"
+        }
     }
-    stage('Test') {
-      steps {
-        sh './jenkins/scripts/test.sh'
-      }
+
+    stages {
+        stage("Build") {
+            steps {
+                sh "mvn -version"
+                sh "mvn clean install"
+            }
+        }
     }
-  }
+
+    post {
+        always {
+            cleanWs()
+        }
+    }
 }
