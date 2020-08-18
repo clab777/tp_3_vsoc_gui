@@ -63,7 +63,7 @@ def sonarPreview() {
             githubToken=env.GITHUB_SONAR_TOKEN
             repoSlug=getRepoSlug()
             withSonarQubeEnv('SonarQube Octodemoapps') {
-                mvn "-Dsonar.analysis.mode=preview -Dsonar.github.pullRequest=${prNo} -Dsonar.github.oauth=${githubToken} -Dsonar.github.repository=${repoSlug} -Dsonar.github.endpoint=https://api.github.com/ org.sonarsource.scanner.maven:sonar-maven-plugin:3.2:sonar"
+                sh "${mvn} -Dsonar.analysis.mode=preview -Dsonar.github.pullRequest=${prNo} -Dsonar.github.oauth=${githubToken} -Dsonar.github.repository=${repoSlug} -Dsonar.github.endpoint=https://api.github.com/ org.sonarsource.scanner.maven:sonar-maven-plugin:3.2:sonar"
             }
         }
     } 
@@ -71,9 +71,9 @@ def sonarPreview() {
     
 def sonarServer() {
     stage('SonarQube Server') {
-        mvn "org.jacoco:jacoco-maven-plugin:prepare-agent install -Dmaven.test.failure.ignore=true -Pcoverage-per-test"
+        sh "${mvn} org.jacoco:jacoco-maven-plugin:prepare-agent install -Dmaven.test.failure.ignore=true -Pcoverage-per-test"
         withSonarQubeEnv('SonarQube Octodemoapps') {
-            mvn "org.sonarsource.scanner.maven:sonar-maven-plugin:3.2:sonar"
+            sh "${mvn} org.sonarsource.scanner.maven:sonar-maven-plugin:3.2:sonar"
         }
         
         context="sonarqube/qualitygate"
@@ -100,13 +100,13 @@ def checkout () {
 
 def build () {
     stage 'Build'
-    mvn 'clean install -DskipTests=true -Dmaven.javadoc.skip=true -Dcheckstyle.skip=true -B -V'
+     sh "${mvn} clean install -DskipTests=true -Dmaven.javadoc.skip=true -Dcheckstyle.skip=true -B -V"
 }
 
 
 def unitTest() {
     stage 'Unit tests'
-    mvn 'test -B -Dmaven.javadoc.skip=true -Dcheckstyle.skip=true'
+    sh "${mvn} test -B -Dmaven.javadoc.skip=true -Dcheckstyle.skip=true"
     if (currentBuild.result == "UNSTABLE") {
         sh "exit 1"
     }
@@ -115,7 +115,7 @@ def unitTest() {
 def allTests() {
     stage 'All tests'
     // don't skip anything
-    mvn 'test -B'
+    sh "${mvn} test -B"
     step([$class: 'JUnitResultArchiver', testResults: '**/target/surefire-reports/TEST-*.xml'])
     if (currentBuild.result == "UNSTABLE") {
         // input "Unit tests are failing, proceed?"
@@ -134,7 +134,7 @@ def lintTest() {
     lintTestPass = true
 
     try {
-        mvn 'verify -DskipTests=true'
+        sh "${mvn} verify -DskipTests=true"
     } catch (err) {
         lintTestPass = false
     } finally {
@@ -144,14 +144,11 @@ def lintTest() {
 
 def coverageTest() {
     context="continuous-integration/jenkins/coverage"
-    sh("${context}", 'Checking code coverage levels', 'PENDING')
-
     coverageTestStatus = true
 
     try {
-        mvn 'cobertura:check'
+        sh "${mvn} cobertura:check"
     } catch (err) {
-        sh "${context}, Code coverage below 90%, FAILURE"
         throw err
     }
 
@@ -164,12 +161,7 @@ def preview() {
     def herokuApp = "${env.HEROKU_PREVIEW}"
     def id = createDeployment(getBranch(), "preview", "Deploying branch to test")
     echo "Deployment ID: ${id}"
-    if (id != null) {
-        setDeploymentStatus(id, "pending", "https://${herokuApp}.herokuapp.com/", "Pending deployment to test");
-        herokuDeploy "${herokuApp}"
-        setDeploymentStatus(id, "success", "https://${herokuApp}.herokuapp.com/", "Successfully deployed to test");
-    }
-    mvn 'deploy -DskipTests=true'
+    sh "${mvn} deploy -DskipTests=true"
 }
 
 
