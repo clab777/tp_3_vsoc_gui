@@ -37,7 +37,7 @@ node {
    
     stage('Build image') {
         /* This builds the actual image */
-        sh "docker build -t ctraore/${IMAGE}:${IMAGE_TAG} .")
+        sh "docker build -t ctraore/${IMAGE}:${IMAGE_TAG} ."
     }
 
    
