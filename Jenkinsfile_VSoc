@@ -4,14 +4,6 @@ import groovy.json.JsonSlurper
 
 node {
 
-     server = Artifactory.server "artifactory"
-     buildInfo = Artifactory.newBuildInfo()
-     buildInfo.env.capture = true
-    
-    // we need to set a newer JVM for Sonar
-    env.JAVA_HOME="${tool 'Java SE DK 8u131'}"
-    env.PATH="${env.JAVA_HOME}/bin:${env.PATH}"
-    
    def app
    def sonarUrl = 'sonar.host.url=http://localhost:9000'
    def mvn = tool (name: 'maven3', type: 'maven') + '/bin/mvn'
