@@ -58,7 +58,7 @@ def isPRMergeBuild() {
 def sonarPreview() {
     stage('SonarQube Preview') {
         prNo = (env.BRANCH_NAME=~/^PR-(\d+)$/)[0][1]
-        mvn "org.jacoco:jacoco-maven-plugin:prepare-agent install -Dmaven.test.failure.ignore=true -Pcoverage-per-test"
+        sh "${mvn} org.jacoco:jacoco-maven-plugin:prepare-agent install -Dmaven.test.failure.ignore=true -Pcoverage-per-test"
         withCredentials([[$class: 'StringBinding', credentialsId: 'GITHUB_SONAR_TOKEN', variable: 'GITHUB_SONAR_TOKEN']]) {
             githubToken=env.GITHUB_SONAR_TOKEN
             repoSlug=getRepoSlug()
@@ -86,8 +86,8 @@ def sonarServer() {
             }    
         }
     }
-}
-    
+//}
+ 
 
 
 
@@ -100,7 +100,7 @@ def checkout () {
 
 def build () {
     stage 'Build'
-     sh "${mvn} clean install -DskipTests=true -Dmaven.javadoc.skip=true -Dcheckstyle.skip=true -B -V"
+    sh "${mvn} clean install -DskipTests=true -Dmaven.javadoc.skip=true -Dcheckstyle.skip=true -B -V"
 }
 
 
@@ -187,4 +187,6 @@ def getRepoSlug() {
     org = tokens[tokens.size()-3]
     repo = tokens[tokens.size()-2]
     return "${org}/${repo}"
+}
+
 }
