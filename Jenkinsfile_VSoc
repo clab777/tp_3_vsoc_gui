@@ -77,14 +77,12 @@ def sonarServer() {
         }
         
         context="sonarqube/qualitygate"
-        setBuildStatus ("${context}", 'Checking Sonarqube quality gate', 'PENDING')
         timeout(time: 1, unit: 'MINUTES') { // Just in case something goes wrong, pipeline will be killed after a timeout
             def qg = waitForQualityGate() // Reuse taskId previously collected by withSonarQubeEnv
             if (qg.status != 'OK') {
-                setBuildStatus ("${context}", "Sonarqube quality gate fail: ${qg.status}", 'FAILURE')
                 error "Pipeline aborted due to quality gate failure: ${qg.status}"
             } else {
-                setBuildStatus ("${context}", "Sonarqube quality gate pass: ${qg.status}", 'SUCCESS')
+                sh "${context}, Sonarqube quality gate pass: ${qg.status}, SUCCESS"
             }    
         }
     }
@@ -98,7 +96,6 @@ def checkout () {
     context="continuous-integration/jenkins/"
     context += isPRMergeBuild()?"pr-merge/checkout":"branch/checkout"
     checkout scm
-    setBuildStatus ("${context}", 'Checking out completed', 'SUCCESS')
 }
 
 def build () {
@@ -134,33 +131,31 @@ def allCodeQualityTests() {
 
 def lintTest() {
     context="continuous-integration/jenkins/linting"
-    setBuildStatus ("${context}", 'Checking code conventions', 'PENDING')
     lintTestPass = true
 
     try {
         mvn 'verify -DskipTests=true'
     } catch (err) {
-        setBuildStatus ("${context}", 'Some code conventions are broken', 'FAILURE')
         lintTestPass = false
     } finally {
-        if (lintTestPass) setBuildStatus ("${context}", 'Code conventions OK', 'SUCCESS')
+        if (lintTestPass) sh "${context}, Code conventions OK, SUCCESS"
     }
 }
 
 def coverageTest() {
     context="continuous-integration/jenkins/coverage"
-    setBuildStatus ("${context}", 'Checking code coverage levels', 'PENDING')
+    sh("${context}", 'Checking code coverage levels', 'PENDING')
 
     coverageTestStatus = true
 
     try {
         mvn 'cobertura:check'
     } catch (err) {
-        setBuildStatus("${context}", 'Code coverage below 90%', 'FAILURE')
+        sh "${context}, Code coverage below 90%, FAILURE"
         throw err
     }
 
-    setBuildStatus ("${context}", 'Code coverage above 90%', 'SUCCESS')
+    sh "${context}, Code coverage above 90%, SUCCESS"
 
 }
 
