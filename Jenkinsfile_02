@@ -1,29 +1,11 @@
-#!groovy
-
 pipeline {
-    environment {
-        JAVA_TOOL_OPTIONS = "-Duser.home=/var/maven"
-    }
-    agent {
-        docker { 
-            image 'jenkins/slave'
-            label 'docker'
-            args '-v /tmp/maven:/var/maven/.m2 -e MAVEN_CONFIG=/var/maven/.m2'
-        }
-    }
-
+    agent { dockerfile true }
     stages {
-        stage("Build") {
+        stage('Test') {
             steps {
-                sh 'mvn -version'
-                sh 'mvn clean install'
+                sh 'node --version'
+                sh 'svn --version'
             }
-        }
-    }
-
-    post {
-        always {
-            cleanWs()
         }
     }
 }
