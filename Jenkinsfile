@@ -1,37 +1,61 @@
 pipeline {
-  // Assign to docker slave(s) label, could also be 'any'
-  agent {
-    label 'docker'
-  }
 
-  stages {
-    stage('Docker node test') {
-      agent {
-        docker {
-          // Set both label and image
-          label 'docker'
-          image 'node:7-alpine'
-          args '--name docker-node' // list any args
+    agent{
+        dockerfile{
+            label "docker"
+            args "-v /tmp/maven:/home/jenkins/.m2 -e MAVEN_CONFIG=/home/jenkins/.m2"
         }
-      }
-      steps {
-        // Steps run in node:7-alpine docker container on docker slave
-        sh 'node --version'
-      }
     }
+    environment {
+	    // holds reference to docker image
+	    IMAGE = readMavenPom().getArtifactId()
+	    IMAGE_VERSION = readMavenPom().getVersion()
+	    IMAGE_TAG = "${env.BUILD_NUMBER}"
+    }
+    stages {
 
-    stage('Docker maven test') {
-      agent {
-        docker {
-          // Set both label and image
-          label 'docker'
-          image 'maven:3-alpine'
+        stage ('Compile Stage') {
+
+            steps {
+                sh 'mvn clean compile'
+            }
         }
-      }
-      steps {
-        // Steps run in maven:3-alpine docker container on docker slave
-        sh 'mvn --version'
-      }
+
+        stage ('Testing Stage') {
+
+            steps {
+                sh 'mvn test'
+            }
+        }
+
+        stage ('Building Stage') {
+
+            steps {
+                sh 'mvn install'
+            }
+        }
+
+        /* stage ('Deployment Stage') {
+            steps {
+                sh 'mvn deploy'
+            }
+        } */
+
+        stage('Deploy Docker Image') {
+             steps {
+                echo "Docker Image Tag Name: ${DOCKER_IMAGE_TAG}"
+
+                sh "docker stop ${DOCKER_IMAGE}"
+
+                sh "docker rm ${DOCKER_IMAGE}"
+
+                sh "docker run --name ${DOCKER_IMAGE} -d -p 2222:2222 ${DOCKER_IMAGE}:${env.BUILD_NUMBER}"
+
+               docker.withRegistry('https://registry.hub.docker.com', 'JenkinsDockerCredentials') {
+                  dockerImage.push("${env.BUILD_NUMBER}")
+                  dockerImage.push("latest")
+                }
+              }
+        }
     }
-  }
 }
