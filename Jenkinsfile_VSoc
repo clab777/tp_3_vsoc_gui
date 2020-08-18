@@ -22,15 +22,13 @@ node {
        sh "${mvn} clean package"
    }
    
-   stage('Sonar Publish'){
-      
-      withCredentials([usernameColonPassword(credentialsId: 'sonarqubeCredentials', variable: 'USERPASS')]) {
-        sh '''
-          set +x
-          curl ${sonarUrl} -u "$USERPASS" > output
-        '''
-      }
-   }
+
+
+  stage('SonarQube analysis') {
+    withSonarQubeEnv(credentialsId: 'sonarqubeCredentials', installationName: 'sonar.host.url=http://localhost:9000') { 
+      sh 'mvn org.sonarsource.scanner.maven:sonar-maven-plugin:3.7.0.1746:sonar'
+    }
+  }
    
    
    stage('Mvn Install'){
