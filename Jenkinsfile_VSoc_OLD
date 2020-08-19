@@ -1,0 +1,191 @@
+#!groovy
+  import groovy.json.JsonOutput
+  import groovy.json.JsonSlurper
+
+  node {
+
+  def app
+  def sonarUrl = 'sonar.host.url=http://localhost:9000'
+def mvn = tool (name: 'maven3', type: 'maven') + '/bin/mvn'
+
+
+                        environment {
+                        JAVA_TOOL_OPTIONS = "-Duser.home=/var/maven"
+                        JAVA_TOOL_OPTIONS = "-Duser.home=/home/jenkins"
+                        // holds reference to docker image
+                        IMAGE = readMavenPom().getArtifactId()
+                        IMAGE_VERSION = readMavenPom().getVersion()
+                        IMAGE_TAG = "${env.BUILD_NUMBER}"
+}
+
+
+                        // pull request or feature branch
+                        if  (env.BRANCH_NAME != 'master') {
+                        checkout()
+                        build()
+                        unitTest()
+                        // test whether this is a regular branch build or a merged PR build
+                        if (!isPRMergeBuild()) {
+                        preview()
+                        sonarServer()
+                        allCodeQualityTests()
+                        dockerBuild()
+                        dockerPublish()
+} else {
+                        // Pull request
+                        sonarPreview()
+}
+} // master branch / production
+                        else {
+                        checkout()
+                        build()
+                        allTests()
+                        preview()
+                        sonarServer()
+                        allCodeQualityTests()
+                        dockerBuild()
+                        dockerPublish()
+                        //preProduction()
+                        //manualPromotion()
+                        //production()
+}
+}
+
+  def isPRMergeBuild() {
+  return (env.BRANCH_NAME ==~ /^PR-\d+$/)
+}
+
+  def sonarPreview() {
+  stage('SonarQube Preview') {
+  prNo = (env.BRANCH_NAME=~/^PR-(\d+)$/)[0][1]
+  sh "${mvn} org.jacoco:jacoco-maven-plugin:prepare-agent install -Dmaven.test.failure.ignore=true -Pcoverage-per-test"
+withCredentials([[$class: 'StringBinding', credentialsId: 'GITHUB_SONAR_TOKEN', variable: 'GITHUB_SONAR_TOKEN']]) {
+                                                                                            githubToken=env.GITHUB_SONAR_TOKEN
+                                                                                            repoSlug=getRepoSlug()
+                                                                                            withSonarQubeEnv('SonarQube Octodemoapps') {
+                                                                                            sh "${mvn} -Dsonar.analysis.mode=preview -Dsonar.github.pullRequest=${prNo} -Dsonar.github.oauth=${githubToken} -Dsonar.github.repository=${repoSlug} -Dsonar.github.endpoint=https://api.github.com/ org.sonarsource.scanner.maven:sonar-maven-plugin:3.2:sonar"
+}
+}
+}
+}
+
+  def sonarServer() {
+  stage('SonarQube Server') {
+  sh "${mvn} org.jacoco:jacoco-maven-plugin:prepare-agent install -Dmaven.test.failure.ignore=true -Pcoverage-per-test"
+  withSonarQubeEnv('SonarQube Octodemoapps') {
+  sh "${mvn} org.sonarsource.scanner.maven:sonar-maven-plugin:3.2:sonar"
+}
+
+  context="sonarqube/qualitygate"
+timeout(time: 1, unit: 'MINUTES') { // Just in case something goes wrong, pipeline will be killed after a timeout
+                         def qg = waitForQualityGate() // Reuse taskId previously collected by withSonarQubeEnv
+                         if (qg.status != 'OK') {
+                         error "Pipeline aborted due to quality gate failure: ${qg.status}"
+} else {
+                         sh "${context}, Sonarqube quality gate pass: ${qg.status}, SUCCESS"
+}
+}
+}
+}
+
+
+
+  def checkout () {
+  stage 'Checkout code'
+  context="continuous-integration/jenkins/"
+  context += isPRMergeBuild()?"pr-merge/checkout":"branch/checkout"
+  checkout scm
+}
+
+  def build () {
+  stage 'Build'
+  sh "${mvn} clean install -DskipTests=true -Dmaven.javadoc.skip=true -Dcheckstyle.skip=true -B -V"
+}
+
+
+  def unitTest() {
+  stage 'Unit tests'
+  sh "${mvn} test -B -Dmaven.javadoc.skip=true -Dcheckstyle.skip=true"
+  if (currentBuild.result == "UNSTABLE") {
+  sh "exit 1"
+}
+}
+
+  def allTests() {
+  stage 'All tests'
+  // don't skip anything
+  sh "${mvn} test -B"
+step([$class: 'JUnitResultArchiver', testResults: '**/target/surefire-reports/TEST-*.xml'])
+  if (currentBuild.result == "UNSTABLE") {
+  // input "Unit tests are failing, proceed?"
+  sh "exit 1"
+}
+}
+
+  def allCodeQualityTests() {
+  stage 'Code Quality'
+  lintTest()
+  coverageTest()
+}
+
+  def lintTest() {
+  context="continuous-integration/jenkins/linting"
+  lintTestPass = true
+
+  try {
+  sh "${mvn} verify -DskipTests=true"
+} catch (err) {
+  lintTestPass = false
+} finally {
+  if (lintTestPass) sh "${context}, Code conventions OK, SUCCESS"
+}
+}
+
+  def coverageTest() {
+  context="continuous-integration/jenkins/coverage"
+  coverageTestStatus = true
+
+  try {
+  sh "${mvn} cobertura:check"
+} catch (err) {
+  throw err
+}
+
+  sh "${context}, Code coverage above 90%, SUCCESS"
+
+}
+
+  def preview() {
+stage name: 'Deploy to Preview env', concurrency: 1
+  def herokuApp = "${env.HEROKU_PREVIEW}"
+  def id = createDeployment(getBranch(), "preview", "Deploying branch to test")
+echo "Deployment ID: ${id}"
+  sh "${mvn} deploy -DskipTests=true"
+}
+
+
+  def dockerBuild () {
+  stage 'Build image'
+  sh "docker build -t ctraore/${IMAGE}:${IMAGE_TAG} ."
+}
+
+  def dockerPublish () {
+  stage 'Publish image'
+withCredentials([string(credentialsId: 'jenkinsDockerCredentials', variable: 'dockerHubPwd')]) {
+                                                                               sh "docker login -u ctraore -p ${dockerHubPwd}"
+}
+  sh "docker push ctraore/${IMAGE}:${IMAGE_TAG}"
+}
+
+
+
+
+
+  def getRepoSlug() {
+  tokens = "${env.JOB_NAME}".tokenize('/')
+  org = tokens[tokens.size()-3]
+  repo = tokens[tokens.size()-2]
+  return "${org}/${repo}"
+}
+
+
