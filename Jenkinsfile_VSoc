@@ -25,7 +25,7 @@ node {
     }
 
     stage('Push Docker Image') {
-       withCredentials([string(credentialsId: 'DOCKERHUB-CREDS', variable: 'dockerHubPwd')]) {
+       withCredentials([string(credentialsId: 'docker-pwd', variable: 'dockerHubPwd')]) {
             sh "docker login -u ${MY_DOCKER_REPO} -p ${dockerHubPwd}"
         }
         sh "docker push ${MY_DOCKER_REPO}/${IMAGE}-${IMAGE_VERSION}:${IMAGE_TAG}"
