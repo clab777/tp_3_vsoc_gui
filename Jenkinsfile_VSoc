@@ -21,7 +21,7 @@ node {
     }
 
     stage('Build Docker Image') {
-        sh "docker build -t ${MY_DOCKER_REPO}/${IMAGE}-${IMAGE_VERSION}:${IMAGE_TAG}"
+        sh "docker build -t ${MY_DOCKER_REPO}/${IMAGE}-${IMAGE_VERSION}:${IMAGE_TAG} ."
     }
 
     stage('Push Docker Image') {
