@@ -22,14 +22,15 @@ node {
     }
 
     stage('Build Docker Image') {
-        sh "docker build -t ${MY_DOCKER_REPO}/${IMAGE}-${IMAGE_VERSION}:${IMAGE_TAG} ."
+       app = sh "docker build -t ${MY_DOCKER_REPO}/${IMAGE}-${IMAGE_VERSION}:${IMAGE_TAG} ."
     }
 
     stage('Push Docker Image') {
        //withCredentials([string(credentialsId: 'docker-pwd', variable: 'dockerHubPwd')]) {
         docker.withRegistry('https://registry.hub.docker.com', 'jenkinsDockerCredentials') {
             //sh "docker login -u ${DOCKER_USER} -p ${dockerHubPwd}"
-            sh "sudo docker push ${MY_DOCKER_REPO}/${IMAGE}-${IMAGE_VERSION}:${IMAGE_TAG}"
+            //sh "sudo docker push ${MY_DOCKER_REPO}/${IMAGE}-${IMAGE_VERSION}:${IMAGE_TAG}"
+            app.push("latest")
         }
         //sh "docker push ${MY_DOCKER_REPO}/${IMAGE}-${IMAGE_VERSION}:${IMAGE_TAG}"
     }
