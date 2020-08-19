@@ -2,7 +2,6 @@ FROM goyalzz/ubuntu-java-8-maven-docker-image
 
 RUN useradd -m -u 1000 -s /bin/bash jenkins
 
-RUN yum install -y openssh-clients
 
 RUN apt-get update && \
       apt-get -y install sudo
