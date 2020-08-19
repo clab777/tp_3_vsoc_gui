@@ -30,7 +30,7 @@ node {
 
     stage('Push image') {
         docker.withRegistry('https://registry.hub.docker.com', 'jenkinsDockerCredentials') {
-            app.push("${env.BUILD_NUMBER}:latest")
+            app.push("latest")
 	}
 	echo "Trying to Push Docker Build to DockerHub"
     }
