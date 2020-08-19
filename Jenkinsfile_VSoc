@@ -21,13 +21,13 @@ node {
     }
 
     stage('Build Docker Image') {
-        sh "docker build -t ${MY_DOCKER_REPO}/${IMAGE}-${IMAGE_VERSION}:${IMAGE_TAG} ."
+        sh "docker build -t ctraore/${IMAGE}-${IMAGE_VERSION}:${IMAGE_TAG} ."
     }
 
     stage('Push Docker Image') {
        withCredentials([string(credentialsId: 'DOCKERHUB-CREDS', variable: 'dockerHubPwd')]) {
             sh "docker login -u ${MY_DOCKER_REPO} -p ${dockerHubPwd}"
         }
-        sh "docker push ${MY_DOCKER_REPO}/${IMAGE}-${IMAGE_VERSION}:${IMAGE_TAG}"
+        sh "docker push ctraore/${IMAGE}-${IMAGE_VERSION}:${IMAGE_TAG}"
     }
 }
