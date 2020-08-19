@@ -32,9 +32,9 @@ node {
     stage('Push image') {
         //docker.withRegistry('https://registry.hub.docker.com', 'jenkinsDockerCredentials') {
 	    withCredentials([string(credentialsId: 'docker-pwd', variable: 'dockerHubPwd')]) {
-		sh "docker login -u ${DOCKER_USER} -p ${dockerHubPwd}"
+		sh "docker login -u ctraore -p ${dockerHubPwd}"
 		    
-            	app.push("${env.BUILD_NUMBER}:latest")
+            	app.push("latest")
 	}
 	echo "Trying to Push Docker Build to DockerHub"
     }
