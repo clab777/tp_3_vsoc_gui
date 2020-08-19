@@ -1,5 +1,6 @@
 node {
     def app
+    def DOCKER_USER = "ctraore"
     def MY_DOCKER_REPO = "ctraore"
     def IMAGE = "vsoc-jdi"
     def IMAGE_VERSION = "v1.0.0"
@@ -26,7 +27,7 @@ node {
 
     stage('Push Docker Image') {
        withCredentials([string(credentialsId: 'docker-pwd', variable: 'dockerHubPwd')]) {
-            sh "docker login -u ctraore -p ${dockerHubPwd}"
+            sh "docker login -u ${DOCKER_USER} -p ${dockerHubPwd}"
         }
         sh "docker push ${MY_DOCKER_REPO}/${IMAGE}-${IMAGE_VERSION}:${IMAGE_TAG}"
     }
