@@ -26,9 +26,11 @@ node {
     }
 
     stage('Push Docker Image') {
-       withCredentials([string(credentialsId: 'docker-pwd', variable: 'dockerHubPwd')]) {
-            sh "docker login -u ${DOCKER_USER} -p ${dockerHubPwd}"
+       //withCredentials([string(credentialsId: 'docker-pwd', variable: 'dockerHubPwd')]) {
+        docker.withRegistry('https://registry.hub.docker.com', 'jenkinsDockerCredentials') {
+            //sh "docker login -u ${DOCKER_USER} -p ${dockerHubPwd}"
+            sh "docker push ${MY_DOCKER_REPO}/${IMAGE}-${IMAGE_VERSION}:${IMAGE_TAG}"
         }
-        sh "docker push ${MY_DOCKER_REPO}/${IMAGE}-${IMAGE_VERSION}:${IMAGE_TAG}"
+        //sh "docker push ${MY_DOCKER_REPO}/${IMAGE}-${IMAGE_VERSION}:${IMAGE_TAG}"
     }
 }
