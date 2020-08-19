@@ -4,6 +4,7 @@ node {
         JAVA_TOOL_OPTIONS = "-Duser.home=/var/maven"
         JAVA_TOOL_OPTIONS = "-Duser.home=/home/jenkins"
         // holds reference to docker image
+	DOCKER_USER = "ctraore"
         IMAGE = readMavenPom().getArtifactId()
         IMAGE_VERSION = readMavenPom().getVersion()
         IMAGE_TAG = "${env.BUILD_NUMBER}"
