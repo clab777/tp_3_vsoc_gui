@@ -5,7 +5,9 @@ def HTTP_PORT="8000"
 
 def app
 
-node {
+pipeline {
+
+    agent any
 
     stage('Initialize'){
         def dockerHome = tool 'docker'
