@@ -1,4 +1,4 @@
-FROM goyalzz/ubuntu-java-8-maven-docker-image
+#FROM goyalzz/ubuntu-java-8-maven-docker-image
 
 FROM openjdk:15-jdk
 
