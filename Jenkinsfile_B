@@ -18,14 +18,7 @@ pipeline {
 
     stages{
         stage('Initialize'){
-            agent {
-                docker {
-                    label 'docker'
-                    image 'goyalzz/ubuntu-java-8-maven-docker-image'
-                    args '-v /tmp/maven:/home/jenkins/.m2 -e MAVEN_CONFIG=/home/jenkins/.m2'
-                }
-            }
-            steps {
+           steps {
                 sh "docker --version"
             }
         }
