@@ -71,7 +71,7 @@ def pushToImage(containerName, tag, dockerUser, dockerPassword){
     
     withCredentials([string(credentialsId: 'docker-pwd', variable: 'dockerHubPwd')]) {
         //docker.withRegistry('https://registry.hub.docker.com', 'jenkinsDockerCredentials') {
-            sh "docker login -u ${dockerUser} -p ${dockerHubPwd}"
+            sh "docker login -u ctraore -p ${dockerHubPwd}"
             //sh "docker push ${MY_DOCKER_REPO}/${IMAGE}-${IMAGE_VERSION}:${IMAGE_TAG}"
             
         }
