@@ -1,6 +1,6 @@
 pipeline {
 
-    //agent any
+    agent any
 
     environment {
         JAVA_TOOL_OPTIONS = "-Duser.home=/home/jenkins"
@@ -13,12 +13,7 @@ pipeline {
         APP = imageBuild(CONTAINER_NAME, CONTAINER_TAG)
     }
 
-    agent {
-        docker {
-            image "goyalzz/ubuntu-java-8-maven-docker-image"
-            args "-v /tmp/maven:/home/jenkins/.m2 -e MAVEN_CONFIG=/home/jenkins/.m2"
-        }
-    }
+
 
     stages{
         stage('Initialize'){
