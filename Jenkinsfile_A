@@ -1,10 +1,10 @@
 def CONTAINER_NAME="vsoc-jdi"
 def CONTAINER_TAG="latest"
 def DOCKER_HUB_USER="ctraore"
-def HTTP_PORT="8090"
+def HTTP_PORT="8000"
 
 def app
- 
+
 node {
 
     stage('Initialize'){
@@ -38,15 +38,12 @@ node {
     }
 
     stage('Push to Docker Registry'){
-        //withCredentials([usernamePassword(credentialsId: 'DOCKERHUB_CREDS', usernameVariable: 'USERNAME', passwordVariable: 'PASSWORD')]) {
-            pushToImage(CONTAINER_NAME, CONTAINER_TAG)
-        //}
+        pushToImage(CONTAINER_NAME, CONTAINER_TAG)
     }
 
     stage('Run App'){
         runApp(CONTAINER_NAME, CONTAINER_TAG, DOCKER_HUB_USER, HTTP_PORT)
     }
-
 }
 
 def imagePrune(containerName){
@@ -54,29 +51,23 @@ def imagePrune(containerName){
         sh "docker image prune -f"
         sh "docker stop $containerName"
     } catch(error){
-        echo "An exception occur!!!"
+        echo "An exception occur! Error Msg: ${error}"
     }
 }
 
 def imageBuild(containerName, tag){
-    //sh "docker build -t $containerName:$tag  -t $containerName --pull --no-cache ."
+    echo "Image build start.............."
     app = docker.build("ctraore/vsoc-jdi")
-    echo "Image build complete, image_name is ${app}"
+    echo "Image build complete."
 }
 
 def pushToImage(containerName, tag){
     echo "start pushing image to dockerhub..............."
-    //sh "docker login -u $dockerUser -p $dockerPassword"
-    //sh "docker tag $containerName:$tag $dockerUser/$containerName:$tag"
-    //sh "docker push $dockerUser/$containerName:$tag"
-    //echo "Image push complete"
-    
-    
+
     docker.withRegistry('https://registry.hub.docker.com', 'DOCKERHUB_CREDS') {
-            app.push("latest")
+        app.push("latest")
 	}
-        echo "*** Image push complete ***"
-    
+    echo "*** Image push complete ***"
 }
 
 def runApp(containerName, tag, dockerHubUser, httpPort){
