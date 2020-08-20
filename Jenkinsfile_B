@@ -5,7 +5,7 @@ pipeline {
     }
 
     tools {
-        maven "Maven" // You need to add a maven with name "3.6.0" in the Global Tools Configuration page
+        maven "Maven" // Configure maven in the Global Tools Configuration page
     }
 
     environment {
@@ -18,8 +18,6 @@ pipeline {
 
         APP = imageBuild(CONTAINER_NAME, CONTAINER_TAG)
     }
-
-
 
     stages{
         stage('Initialize'){
