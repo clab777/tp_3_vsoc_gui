@@ -3,7 +3,6 @@ pipeline {
     agent any
 
     environment {
-        JAVA_TOOL_OPTIONS = "-Duser.home=/var/maven"
         JAVA_TOOL_OPTIONS = "-Duser.home=/home/jenkins"
 
         CONTAINER_NAME="vsoc-jdi"
@@ -17,9 +16,9 @@ pipeline {
     stages{
         stage('Initialize'){
             steps {
-                def dockerHome = tool 'docker'
-                def mavenHome  = tool 'Maven'
-                env.PATH = "${dockerHome}/bin:${mavenHome}/bin:${env.PATH}"
+                //def dockerHome = tool 'docker'
+                //def mavenHome  = tool 'Maven'
+                //env.PATH = "${dockerHome}/bin:${mavenHome}/bin:${env.PATH}"
             }
         }
 
