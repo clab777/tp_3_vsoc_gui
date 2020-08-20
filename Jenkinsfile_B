@@ -1,7 +1,9 @@
 pipeline {
 
-    //agent any
-
+    agent {
+        label 'docker'
+        args '-v /tmp/maven:/home/jenkins/.m2 -e MAVEN_CONFIG=/home/jenkins/.m2'
+    }
     environment {
         JAVA_TOOL_OPTIONS = "-Duser.home=/home/jenkins"
 
@@ -13,20 +15,17 @@ pipeline {
         APP = imageBuild(CONTAINER_NAME, CONTAINER_TAG)
     }
 
-    agent {
-        dockerfile {
-            //label "docker"
-            args "-v /tmp/maven:/home/jenkins/.m2 -e MAVEN_CONFIG=/home/jenkins/.m2"
-        }
-    }
+
 
     stages{
         stage('Initialize'){
+            agent {
+                docker {
+                    label 'docker'
+                }
+            }
             steps {
-                //def dockerHome = tool 'docker'
-                //def mavenHome  = tool 'Maven'
-                //env.PATH = "${dockerHome}/bin:${mavenHome}/bin:${env.PATH}"
-                echo "Initialization steps coming up here...."
+                sh "docker --version"
             }
         }
 
