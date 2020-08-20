@@ -3,6 +3,11 @@ pipeline {
     agent {
         label 'docker'
     }
+
+    tools {
+        maven "Maven" // You need to add a maven with name "3.6.0" in the Global Tools Configuration page
+    }
+
     environment {
         JAVA_TOOL_OPTIONS = "-Duser.home=/home/jenkins"
 
@@ -20,6 +25,7 @@ pipeline {
         stage('Initialize'){
            steps {
                 sh "docker --version"
+                sh "mvn -version"
             }
         }
 
