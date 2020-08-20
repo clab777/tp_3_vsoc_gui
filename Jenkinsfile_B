@@ -15,8 +15,7 @@ pipeline {
 
     agent {
         docker {
-            image "maven:3.6-adoptopenjdk-8"
-            label "docker"
+            image "goyalzz/ubuntu-java-8-maven-docker-image"
             args "-v /tmp/maven:/home/jenkins/.m2 -e MAVEN_CONFIG=/home/jenkins/.m2"
         }
     }
