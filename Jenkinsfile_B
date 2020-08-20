@@ -1,13 +1,18 @@
-def CONTAINER_NAME="vsoc-jdi"
-def CONTAINER_TAG="latest"
-def DOCKER_HUB_USER="ctraore"
-def HTTP_PORT="8000"
-
-def app
-
 pipeline {
 
     agent any
+
+    environment {
+        JAVA_TOOL_OPTIONS = "-Duser.home=/var/maven"
+        JAVA_TOOL_OPTIONS = "-Duser.home=/home/jenkins"
+
+        CONTAINER_NAME="vsoc-jdi"
+        CONTAINER_TAG="latest"
+        DOCKER_HUB_USER="ctraore"
+        HTTP_PORT="8000"
+
+        APP = imageBuild(CONTAINER_NAME, CONTAINER_TAG)
+    }
 
     stages{
         stage('Initialize'){
@@ -32,10 +37,12 @@ pipeline {
 
         stage('Sonar scan'){
             steps {
-                try {
-                    sh "mvn sonar:sonar"
-                } catch(error){
-                    echo "The sonar server could not be reached ${error}"
+                script {
+                    try {
+                        sh "mvn sonar:sonar"
+                    } catch(error){
+                        echo "The sonar server could not be reached ${error}"
+                    }
                 }
             }
          }
@@ -67,11 +74,13 @@ pipeline {
 }
 
 def imagePrune(containerName){
-    try {
-        sh "docker image prune -f"
-        sh "docker stop $containerName"
-    } catch(error){
-        echo "An exception occur! Error Msg: ${error}"
+    script {
+        try {
+            sh "docker image prune -f"
+            sh "docker stop $containerName"
+        } catch(error){
+            echo "An exception occur! Error Msg: ${error}"
+        }
     }
 }
 

@@ -30,17 +30,11 @@ node {
     }
 
     stage('Push image') {
-<<<<<<< HEAD
         docker.withRegistry('https://registry.hub.docker.com', 'jenkinsDockerCredentials') {
+        //withCredentials([string(credentialsId: 'docker-pwd', variable: 'dockerHubPwd')]) {
+            //sh "docker login -u ctraore -p ${dockerHubPwd} "
             app.push("latest")
-=======
-        //docker.withRegistry('https://registry.hub.docker.com', 'jenkinsDockerCredentials') {
-	    withCredentials([string(credentialsId: 'docker-pwd', variable: 'dockerHubPwd')]) {
-		sh "docker login -u ctraore -p ${dockerHubPwd} "
-		    
-            	app.push("latest")
->>>>>>> 382e4c6402486f31017a0f81e03ead6086277f9c
-	}
-	echo "Trying to Push Docker Build to DockerHub"
+        }
+        echo "Trying to Push Docker Build to DockerHub"
     }
 }
