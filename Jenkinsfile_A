@@ -3,6 +3,8 @@ def CONTAINER_TAG="latest"
 def DOCKER_HUB_USER="ctraore"
 def HTTP_PORT="8090"
 
+def app
+ 
 node {
 
     stage('Initialize'){
@@ -57,8 +59,8 @@ def imagePrune(containerName){
 }
 
 def imageBuild(containerName, tag){
-    sh "docker build -t $containerName:$tag  -t $containerName --pull --no-cache ."
-    echo "Image build complete"
+    app = sh "docker build -t $containerName:$tag  -t $containerName --pull --no-cache ."
+    echo "Image build complete, image_name is ${app}"
 }
 
 def pushToImage(containerName, tag){
@@ -69,13 +71,9 @@ def pushToImage(containerName, tag){
     //echo "Image push complete"
     
     
-    withCredentials([string(credentialsId: 'docker-pwd', variable: 'dockerHubPwd')]) {
-        //docker.withRegistry('https://registry.hub.docker.com', 'jenkinsDockerCredentials') {
-            sh "docker login -u ctraore -p ${dockerHubPwd}"
-            //sh "docker push ${MY_DOCKER_REPO}/${IMAGE}-${IMAGE_VERSION}:${IMAGE_TAG}"
-            
-        }
-        sh "docker push ctraore/vsoc-jdi"
+    docker.withRegistry('https://registry.hub.docker.com', 'DOCKERHUB_CREDS') {
+            app.push("latest")
+	}
         echo "*** Image push complete ***"
     
 }
