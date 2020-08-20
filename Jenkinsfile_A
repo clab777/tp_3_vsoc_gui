@@ -37,7 +37,7 @@ node {
 
     stage('Push to Docker Registry'){
         //withCredentials([usernamePassword(credentialsId: 'DOCKERHUB_CREDS', usernameVariable: 'USERNAME', passwordVariable: 'PASSWORD')]) {
-            pushToImage(CONTAINER_NAME, CONTAINER_TAG, USERNAME, PASSWORD)
+            pushToImage(CONTAINER_NAME, CONTAINER_TAG)
         //}
     }
 
@@ -61,7 +61,7 @@ def imageBuild(containerName, tag){
     echo "Image build complete"
 }
 
-def pushToImage(containerName, tag, dockerUser, dockerPassword){
+def pushToImage(containerName, tag){
     echo "start pushing image to dockerhub..............."
     //sh "docker login -u $dockerUser -p $dockerPassword"
     //sh "docker tag $containerName:$tag $dockerUser/$containerName:$tag"
@@ -75,8 +75,8 @@ def pushToImage(containerName, tag, dockerUser, dockerPassword){
             //sh "docker push ${MY_DOCKER_REPO}/${IMAGE}-${IMAGE_VERSION}:${IMAGE_TAG}"
             
         }
-        sh "docker push ${MY_DOCKER_REPO}/${IMAGE}-${IMAGE_VERSION}:${IMAGE_TAG}"
-        echo "Image push complete"
+        sh "docker push ctraore/vsoc-jdi"
+        echo "*** Image push complete ***"
     
 }
 
