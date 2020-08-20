@@ -34,4 +34,7 @@ node {
         }
         sh "docker push ${MY_DOCKER_REPO}/${IMAGE}-${IMAGE_VERSION}:${IMAGE_TAG}"
     }
+
+
+
 }
