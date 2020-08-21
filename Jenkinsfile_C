@@ -42,21 +42,19 @@ pipeline {
         }
 
 
-        stages {
-            stage('snyk dependency scan') {
-              tools {
-                snyk 'SnykV2PluginTest'
-              }
-              steps {
-                snykSecurity(
-                  organisation: 'clab777',
-                  severity: 'high',
-                  snykInstallation: 'SnykV2PluginTest',
-                  snykTokenId: 'SNYK_API_TOKEN',
-                  failOnIssues: 'true'
-                )
-              }
-            }
+        stage('snyk dependency scan') {
+          tools {
+            snyk 'SnykV2PluginTest'
+          }
+          steps {
+            snykSecurity(
+              organisation: 'clab777',
+              severity: 'high',
+              snykInstallation: 'SnykV2PluginTest',
+              snykTokenId: 'SNYK_API_TOKEN',
+              failOnIssues: 'true'
+            )
+          }
         }
 
         stage('Build'){
