@@ -22,8 +22,6 @@ pipeline {
 
     }
 
-    snykSecurity snykInstallation: 'SnykV2PluginTest', snykTokenId: '9c0b48e6-7f17-4844-a3aa-a6aec82a384e'
-
 
     stages{
         stage('Initialize'){
@@ -52,6 +50,7 @@ pipeline {
             snyk 'SnykV2PluginTest'
           }
           steps {
+            snykSecurity snykInstallation: 'SnykV2PluginTest', snykTokenId: '9c0b48e6-7f17-4844-a3aa-a6aec82a384e'
             sh 'snyk test'
           }
         }
