@@ -20,9 +20,10 @@ pipeline {
 
         APP = imageBuild(CONTAINER_NAME, CONTAINER_TAG)
 
-        snykSecurity snykInstallation: 'SnykV2PluginTest', snykTokenId: '9c0b48e6-7f17-4844-a3aa-a6aec82a384e'
-
     }
+
+    snykSecurity snykInstallation: 'SnykV2PluginTest', snykTokenId: '9c0b48e6-7f17-4844-a3aa-a6aec82a384e'
+
 
     stages{
         stage('Initialize'){
