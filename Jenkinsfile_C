@@ -7,7 +7,6 @@ pipeline {
     tools {
         maven "Maven" // Configure maven in the Global Tools Configuration page
         snyk 'SnykV2PluginTest'
-        snykSecurity snykInstallation: 'SnykV2PluginTest', snykTokenId: '9c0b48e6-7f17-4844-a3aa-a6aec82a384e'
 
     }
 
@@ -20,6 +19,9 @@ pipeline {
         HTTP_PORT="8000"
 
         APP = imageBuild(CONTAINER_NAME, CONTAINER_TAG)
+
+        snykSecurity snykInstallation: 'SnykV2PluginTest', snykTokenId: '9c0b48e6-7f17-4844-a3aa-a6aec82a384e'
+
     }
 
     stages{
