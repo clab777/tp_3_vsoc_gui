@@ -47,13 +47,9 @@ pipeline {
             snyk 'SnykV2PluginTest'
           }
           steps {
-            snykSecurity(
-              organisation: 'clab777',
-              severity: 'high',
-              snykInstallation: 'SnykV2PluginTest',
-              snykTokenId: 'SNYK_API_TOKEN',
-              failOnIssues: 'true'
-            )
+            steps {
+                sh './snyk test'
+            }
           }
         }
 
