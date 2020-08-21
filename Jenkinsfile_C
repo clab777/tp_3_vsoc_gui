@@ -17,6 +17,8 @@ pipeline {
         HTTP_PORT="8000"
 
         APP = imageBuild(CONTAINER_NAME, CONTAINER_TAG)
+
+        SNYK_TOKEN = credentials('SNYK_API_TOKEN')
     }
 
     stages{
@@ -41,24 +43,21 @@ pipeline {
         }
 
 
-        // Authorize the Snyk CLI
-        withCredentials([string(credentialsId: 'SNYK_API_TOKEN', variable: 'SNYK_TOKEN_VAR')]) {
-            stage('Authorize Snyk CLI') {
-                sh './snyk auth ${SNYK_TOKEN_VAR}'
-            }
-        }
-
         // Run snyk test to check for vulnerabilities and fail the build if any are found
         // Consider using --severity-threshold=<low|medium|high> for more granularity (see snyk help for more info).
         stage('Snyk Test using Snyk CLI') {
-            sh './snyk test'
+            steps {
+                sh './snyk test'
+            }
         }
 
         // Capture the dependency tree for ongoing monitoring in Snyk.
         // This is typically done after deployment to some environment (ex staging, test, production, etc).
         stage('Snyk Monitor using Snyk CLI') {
-            // Use your own Snyk Organization with --org=<your-org>
-            sh './snyk monitor --org=clab777'
+            steps {
+                // Use your own Snyk Organization with --org=<your-org>
+                sh './snyk monitor --org=clab777'
+            }
         }
 
         stage('Build'){
