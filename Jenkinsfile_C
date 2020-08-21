@@ -6,6 +6,7 @@ pipeline {
 
     tools {
         maven "Maven" // Configure maven in the Global Tools Configuration page
+        snyk 'SnykV2PluginTest'
     }
 
     environment {
@@ -41,24 +42,20 @@ pipeline {
         }
 
 
-        // Run snyk test to check for vulnerabilities and fail the build if any are found
-        // Consider using --severity-threshold=<low|medium|high> for more granularity (see snyk help for more info).
-        stage('Snyk Test using Snyk CLI') {
-            steps {
-                snykSecurity(tokenCredentialId: 'SNYK_API_TOKEN', failOnBuild: true, monitor: true) {
-                    sh './snyk test'
-                }
-            }
-        }
-
-        // Capture the dependency tree for ongoing monitoring in Snyk.
-        // This is typically done after deployment to some environment (ex staging, test, production, etc).
-        stage('Snyk Monitor using Snyk CLI') {
-            steps {
-                snykSecurity(tokenCredentialId: 'SNYK_API_TOKEN', failOnBuild: true, monitor: true) {
-                    // Use your own Snyk Organization with --org=<your-org>
-                    sh './snyk monitor --org=clab777'
-                }
+        stages {
+            stage('snyk dependency scan') {
+              tools {
+                snyk 'SnykV2PluginTest'
+              }
+              steps {
+                snykSecurity(
+                  organisation: 'clab777',
+                  severity: 'high',
+                  snykInstallation: 'SnykV2PluginTest',
+                  snykTokenId: 'SNYK_API_TOKEN',
+                  failOnIssues: 'true'
+                )
+              }
             }
         }
 
