@@ -17,8 +17,6 @@ pipeline {
         HTTP_PORT="8000"
 
         APP = imageBuild(CONTAINER_NAME, CONTAINER_TAG)
-
-        SNYK_TOKEN = credentials('SNYK_API_TOKEN')
     }
 
     stages{
@@ -47,7 +45,9 @@ pipeline {
         // Consider using --severity-threshold=<low|medium|high> for more granularity (see snyk help for more info).
         stage('Snyk Test using Snyk CLI') {
             steps {
-                sh './snyk test'
+                snykSecurity(tokenCredentialId: 'SNYK_API_TOKEN', failOnBuild: true, monitor: true) {
+                    sh './snyk test'
+                }
             }
         }
 
@@ -55,8 +55,10 @@ pipeline {
         // This is typically done after deployment to some environment (ex staging, test, production, etc).
         stage('Snyk Monitor using Snyk CLI') {
             steps {
-                // Use your own Snyk Organization with --org=<your-org>
-                sh './snyk monitor --org=clab777'
+                snykSecurity(tokenCredentialId: 'SNYK_API_TOKEN', failOnBuild: true, monitor: true) {
+                    // Use your own Snyk Organization with --org=<your-org>
+                    sh './snyk monitor --org=clab777'
+                }
             }
         }
 
