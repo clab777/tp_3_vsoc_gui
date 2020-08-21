@@ -47,7 +47,7 @@ pipeline {
             snyk 'SnykV2PluginTest'
           }
           steps {
-            sh './snyk test'
+            sh 'snyk test'
           }
         }
 
