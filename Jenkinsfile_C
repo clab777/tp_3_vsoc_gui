@@ -1,0 +1,138 @@
+pipeline {
+
+    agent {
+        label 'docker'
+    }
+
+    tools {
+        maven "Maven" // Configure maven in the Global Tools Configuration page
+    }
+
+    environment {
+        JAVA_TOOL_OPTIONS = "-Duser.home=/home/jenkins"
+
+        CONTAINER_NAME="vsoc-jdi"
+        CONTAINER_TAG="latest"
+        DOCKER_HUB_USER="ctraore"
+        HTTP_PORT="8000"
+
+        APP = imageBuild(CONTAINER_NAME, CONTAINER_TAG)
+    }
+
+    stages{
+        stage('Initialize'){
+           steps {
+               echo 'Initialize & Cleanup Workspace'
+               sh 'ls -la'
+               sh 'rm -rf *'
+               sh 'rm -rf .git'
+               sh 'rm -rf .gitignore'
+               sh 'ls -la'
+
+               sh "docker --version"
+               sh "mvn -version"
+            }
+        }
+
+        stage('Checkout') {
+            steps {
+                checkout scm
+            }
+        }
+
+
+        // Authorize the Snyk CLI
+        withCredentials([string(credentialsId: 'SNYK_API_TOKEN', variable: 'SNYK_TOKEN_VAR')]) {
+            stage('Authorize Snyk CLI') {
+                sh './snyk auth ${SNYK_TOKEN_VAR}'
+            }
+        }
+
+        // Run snyk test to check for vulnerabilities and fail the build if any are found
+        // Consider using --severity-threshold=<low|medium|high> for more granularity (see snyk help for more info).
+        stage('Snyk Test using Snyk CLI') {
+            sh './snyk test'
+        }
+
+        // Capture the dependency tree for ongoing monitoring in Snyk.
+        // This is typically done after deployment to some environment (ex staging, test, production, etc).
+        stage('Snyk Monitor using Snyk CLI') {
+            // Use your own Snyk Organization with --org=<your-org>
+            sh './snyk monitor --org=clab777'
+        }
+
+        stage('Build'){
+            steps {
+                sh "mvn clean install"
+            }
+        }
+
+        stage('Sonar scan'){
+            steps {
+                script {
+                    try {
+                        sh "mvn sonar:sonar"
+                    } catch(error){
+                        echo "The sonar server could not be reached ${error}"
+                    }
+                }
+            }
+         }
+
+        stage("Image Prune") {
+            steps {
+                imagePrune(CONTAINER_NAME)
+            }
+        }
+
+        stage('Image Build') {
+            steps {
+                imageBuild(CONTAINER_NAME, CONTAINER_TAG)
+            }
+        }
+
+        stage('Push to Docker Registry') {
+            steps {
+                pushToImage(CONTAINER_NAME, CONTAINER_TAG)
+            }
+        }
+
+        stage('Run App'){
+            steps {
+                runApp(CONTAINER_NAME, CONTAINER_TAG, DOCKER_HUB_USER, HTTP_PORT)
+            }
+        }
+    }
+}
+
+def imagePrune(containerName){
+    script {
+        try {
+            sh "docker image prune -f"
+            sh "docker stop $containerName"
+        } catch(error){
+            echo "An exception occur! Error Msg: ${error}"
+        }
+    }
+}
+
+def imageBuild(containerName, tag){
+    echo "Image build start.............."
+    app = docker.build("ctraore/vsoc-jdi")
+    echo "Image build complete."
+}
+
+def pushToImage(containerName, tag){
+    echo "start pushing image to dockerhub..............."
+
+    docker.withRegistry('https://registry.hub.docker.com', 'DOCKERHUB_CREDS') {
+        app.push("latest")
+	}
+    echo "*** Image push complete ***"
+}
+
+def runApp(containerName, tag, dockerHubUser, httpPort){
+    sh "docker pull $dockerHubUser/$containerName"
+    sh "docker run -d --rm -p $httpPort:$httpPort --name $containerName $dockerHubUser/$containerName:$tag"
+    echo "Application started on port: ${httpPort} (http)"
+}
