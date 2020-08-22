@@ -20,6 +20,8 @@ pipeline {
 
         APP = imageBuild(CONTAINER_NAME, CONTAINER_TAG)
 
+        SNYK_INSTALL_ID="SnykV2PluginTest"
+        SNYK_TOKEN='9c0b48e6-7f17-4844-a3aa-a6aec82a384e'
     }
 
 
@@ -47,12 +49,9 @@ pipeline {
 
 
         stage('snyk dependency scan') {
-          tools {
-            snyk 'SnykV2PluginTest'
-          }
           steps {
-            snykSecurity snykInstallation: 'SnykV2PluginTest', snykTokenId: '9c0b48e6-7f17-4844-a3aa-a6aec82a384e'
-            sh 'snyk test'
+          //snykSecurity snykInstallation: 'SnykV2PluginTest', snykTokenId: '9c0b48e6-7f17-4844-a3aa-a6aec82a384e'
+            synkScan(SNYK_TOKEN)
           }
         }
 
@@ -100,13 +99,25 @@ pipeline {
     }
 }
 
+def synkScan(snykToken){
+    script {
+        try {
+            sh 'npm install –g snyk'
+            sh "snyk auth $snykToken"
+            sh 'snyk test'
+        } catch(error){
+            echo "Snyk scan exception > Error Msg: ${error}"
+        }
+    }
+}
+
 def imagePrune(containerName){
     script {
         try {
             sh "docker image prune -f"
             sh "docker stop $containerName"
         } catch(error){
-            echo "An exception occur! Error Msg: ${error}"
+            echo "docker image prune exception > Error Msg: ${error}"
         }
     }
 }
