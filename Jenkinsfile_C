@@ -106,9 +106,9 @@ pipeline {
 def synkScan(snykToken){
     script {
         try {
-            //sh 'npm install –g snyk'
             //sh "snyk auth $snykToken"
             snykSecurity snykInstallation: 'snyk', snykTokenId: '9c0b48e6-7f17-4844-a3aa-a6aec82a384e'
+            sh 'npm install –g snyk'
             sh 'snyk test'
         } catch(error){
             echo "Snyk scan exception > Error Msg: ${error}"
