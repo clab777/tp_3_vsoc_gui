@@ -43,6 +43,8 @@ pipeline {
         stage('Checkout') {
             steps {
                 checkout scm
+
+                synkScan()
             }
         }
 
@@ -52,11 +54,11 @@ pipeline {
 
        // Run snyk test to check for vulnerabilities and fail the build if any are found
        // Consider using --severity-threshold=<low|medium|high> for more granularity (see snyk help for more info).
-       stage('Snyk Test using Snyk CLI') {
-           steps {
-               synkScan(SNYK_TOKEN)
-           }
-       }
+       //stage('Snyk Test using Snyk CLI') {
+       //    steps {
+       //        synkScan(SNYK_TOKEN)
+       //   }
+       //}
 
 
         stage('Build'){
@@ -103,13 +105,16 @@ pipeline {
     }
 }
 
-def synkScan(snykToken){
+def synkScan(){
     script {
         try {
             //sh "snyk auth $snykToken"
-            snykSecurity snykInstallation: 'snyk', snykTokenId: '9c0b48e6-7f17-4844-a3aa-a6aec82a384e'
-            sh 'npm install –g snyk'
+            //snykSecurity snykInstallation: 'snyk', snykTokenId: '9c0b48e6-7f17-4844-a3aa-a6aec82a384e'
+
+            echo "done snyk scan..............."
+            sh "docker run --rm -it --env $SNYK_TOKEN -v $(PWD):/app snyk/snyk:maven"
             sh 'snyk test'
+            echo "done snyk scan..............."
         } catch(error){
             echo "Snyk scan exception > Error Msg: ${error}"
         }
