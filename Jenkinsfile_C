@@ -64,7 +64,7 @@ pipeline {
                     pwd
 
                     ls -la
-                    ./snyk -v
+                    /var/jenkins_home/workspace/vsoc-docker-snyk-integration/snyk -v
                 '''
             }
         }
