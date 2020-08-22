@@ -6,7 +6,7 @@ pipeline {
 
     tools {
         maven "Maven" // Configure maven in the Global Tools Configuration page
-        snyk 'SnykV2PluginTest'
+        snyk 'snyk'
 
     }
 
@@ -54,7 +54,7 @@ pipeline {
        // Consider using --severity-threshold=<low|medium|high> for more granularity (see snyk help for more info).
        stage('Snyk Test using Snyk CLI') {
            steps {
-               sh 'snyk test'
+               synkScan(SNYK_TOKEN)
            }
        }
 
@@ -106,7 +106,7 @@ pipeline {
 def synkScan(snykToken){
     script {
         try {
-            sh 'npm install –g snyk'
+            //sh 'npm install –g snyk'
             sh "snyk auth $snykToken"
             sh 'snyk test'
         } catch(error){
