@@ -60,6 +60,9 @@ pipeline {
                     echo "Download URL: ${snyk_cli_dl_linux}"
                     curl -Lo ./snyk "${snyk_cli_dl_linux}"
                     chmod +x snyk
+
+                    pwd
+
                     ls -la
                     ./snyk -v
                 '''
