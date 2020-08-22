@@ -108,6 +108,7 @@ def synkScan(snykToken){
         try {
             //sh 'npm install –g snyk'
             //sh "snyk auth $snykToken"
+            snykSecurity snykInstallation: 'snyk', snykToken '9c0b48e6-7f17-4844-a3aa-a6aec82a384e'
             sh 'snyk test'
         } catch(error){
             echo "Snyk scan exception > Error Msg: ${error}"
