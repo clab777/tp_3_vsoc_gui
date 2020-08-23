@@ -37,6 +37,7 @@ pipeline {
 
                sh "docker --version"
                sh "mvn -version"
+               sh "snyk -v"
            }
         }
 
