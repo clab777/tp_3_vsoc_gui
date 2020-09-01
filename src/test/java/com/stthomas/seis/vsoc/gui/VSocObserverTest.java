@@ -24,7 +24,7 @@ public class VSocObserverTest {
 		List<VSocObserver> observers = service.registerNewState(ui);
 		assertTrue(observers != null && observers.size() > 0);
 		assertTrue(((VSocUI)observers.get(0)).getMcuHeartBeatLedInput() != null 
-				&& "ON".equalsIgnoreCase(((VSocUI)observers.get(0)).getMcuHeartBeatLedInput()));
+				&& "OFF".equalsIgnoreCase(((VSocUI)observers.get(0)).getMcuHeartBeatLedInput()));
     }
 
 }
