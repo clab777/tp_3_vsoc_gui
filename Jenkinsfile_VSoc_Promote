@@ -93,13 +93,15 @@ pipeline {
         }
 
        stage('Get Approval'){
-            if (userApproval() == true) {
-                // do something
-                echo "the user approved!!!"
-            } else {
-                // do something else
-                echo "failed to get user approval......"
-                currentBuild.result = 'FAILURE'
+           steps{
+                if (userApproval() == true) {
+                    // do something
+                    echo "the user approved!!!"
+                } else {
+                    // do something else
+                    echo "failed to get user approval......"
+                    currentBuild.result = 'FAILURE'
+                }
             }
         }
 
