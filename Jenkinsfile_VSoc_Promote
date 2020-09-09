@@ -1,0 +1,65 @@
+node {
+    def app
+    def DOCKER_USER = "ctraore"
+    def MY_DOCKER_REPO = "ctraore"
+    def IMAGE = "vsoc-jdi"
+    def IMAGE_VERSION = "v1.0.0"
+    def IMAGE_TAG = "latest"
+    environment {
+        JAVA_TOOL_OPTIONS = "-Duser.home=/var/maven"
+        JAVA_TOOL_OPTIONS = "-Duser.home=/home/jenkins"
+        
+    }
+
+    stage('Clone repository') {
+        checkout scm
+    }
+
+    stage('Mvn Package') {
+        def mvnHome = tool name: 'maven3', type: 'maven'
+        def mvnCMD = "${mvnHome}/bin/mvn"
+        sh "${mvnCMD} clean package"
+    }
+
+    stage('Build Docker Image') {
+       app = sh "docker build -t ${MY_DOCKER_REPO}/${IMAGE}-${IMAGE_VERSION}:${IMAGE_TAG} ."
+    }
+
+    stage('Get Approval'){
+        if (userApproval == true) {
+            // do something
+            echo "the user approved!!!"
+        } else {
+            // do something else
+            echo "failed to get user approval......"
+            currentBuild.result = 'FAILURE'
+        }
+    }
+
+    stage('Push Docker Image') {
+       echo "====> TODO:: Implement Approval."
+       withCredentials([string(credentialsId: 'docker-pwd', variable: 'dockerHubPwd')]) {
+        //docker.withRegistry('https://registry.hub.docker.com', 'jenkinsDockerCredentials') {
+            sh "docker login -u ${DOCKER_USER} -p ${dockerHubPwd}"
+            //sh "docker push ${MY_DOCKER_REPO}/${IMAGE}-${IMAGE_VERSION}:${IMAGE_TAG}"
+            
+        }
+        sh "docker push ${MY_DOCKER_REPO}/${IMAGE}-${IMAGE_VERSION}:${IMAGE_TAG}"
+    }
+
+
+    def userApproval()
+    try {
+        userApproval = input(
+            id: 'Proceed1', message: 'Was this successful?', parameters: [
+            [$class: 'BooleanParameterDefinition', defaultValue: true, description: '', name: 'Please confirm you agree with this']
+            ])
+    } catch(err) { // input false
+        def user = err.getCauses()[0].getUser()
+        userApproval = false
+        echo "Aborted by: [${user}]"
+    }
+
+
+
+}
