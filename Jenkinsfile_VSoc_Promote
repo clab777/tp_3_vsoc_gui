@@ -5,7 +5,7 @@ pipeline {
     }
 
     tools {
-        maven "Maven" // Configure maven in the Global Tools Configuration page
+        maven "maven" // Configure maven in the Global Tools Configuration page
         snyk 'snyk'
 
     }
@@ -94,14 +94,7 @@ pipeline {
 
        stage('Get Approval'){
            steps{
-                if (userApproval() == true) {
-                    // do something
-                    echo "the user approved!!!"
-                } else {
-                    // do something else
-                    echo "failed to get user approval......"
-                    currentBuild.result = 'FAILURE'
-                }
+                input 'Deploy to Production?'
             }
         }
 
