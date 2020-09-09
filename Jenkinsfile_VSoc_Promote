@@ -1,54 +1,176 @@
-node {
-    def app
-    def DOCKER_USER = "ctraore"
-    def MY_DOCKER_REPO = "ctraore"
-    def IMAGE = "vsoc-jdi"
-    def IMAGE_VERSION = "v1.0.0"
-    def IMAGE_TAG = "latest"
+pipeline {
+
+    agent {
+        label 'docker'
+    }
+
+    tools {
+        maven "Maven" // Configure maven in the Global Tools Configuration page
+        snyk 'snyk'
+
+    }
+
     environment {
-        JAVA_TOOL_OPTIONS = "-Duser.home=/var/maven"
         JAVA_TOOL_OPTIONS = "-Duser.home=/home/jenkins"
-        
+
+        CONTAINER_NAME="vsoc-jdi"
+        CONTAINER_TAG="latest"
+        DOCKER_HUB_USER="ctraore"
+        HTTP_PORT="8000"
+
+        APP = imageBuild(CONTAINER_NAME, CONTAINER_TAG)
+
+        SNYK_INSTALL_ID="SnykV2PluginTest"
+        SNYK_TOKEN='9c0b48e6-7f17-4844-a3aa-a6aec82a384e'
     }
 
-    stage('Clone repository') {
-        checkout scm
-    }
 
-    stage('Mvn Package') {
-        def mvnHome = tool name: 'maven3', type: 'maven'
-        def mvnCMD = "${mvnHome}/bin/mvn"
-        sh "${mvnCMD} clean package"
-    }
+    stages{
+        stage('Initialize'){
+           steps {
+               echo 'Initialize & Cleanup Workspace'
+               sh 'ls -la'
+               sh 'rm -rf *'
+               sh 'rm -rf .git'
+               sh 'rm -rf .gitignore'
+               sh 'ls -la'
 
-    stage('Build Docker Image') {
-       app = sh "docker build -t ${MY_DOCKER_REPO}/${IMAGE}-${IMAGE_VERSION}:${IMAGE_TAG} ."
-    }
+               sh "docker --version"
+               sh "mvn -version"
+               sh "snyk -v"
+           }
+        }
 
-    stage('Get Approval'){
-        if (userApproval == true) {
-            // do something
-            echo "the user approved!!!"
-        } else {
-            // do something else
-            echo "failed to get user approval......"
-            currentBuild.result = 'FAILURE'
+        stage('Checkout') {
+            steps {
+                checkout scm
+
+                synkScan()
+            }
+        }
+
+
+
+
+
+       // Run snyk test to check for vulnerabilities and fail the build if any are found
+       // Consider using --severity-threshold=<low|medium|high> for more granularity (see snyk help for more info).
+       //stage('Snyk Test using Snyk CLI') {
+       //    steps {
+       //        synkScan(SNYK_TOKEN)
+       //   }
+       //}
+
+
+        stage('Build'){
+            steps {
+                sh "mvn clean install"
+            }
+        }
+
+        stage('Sonar scan'){
+            steps {
+                script {
+                    try {
+                        sh "mvn sonar:sonar"
+                    } catch(error){
+                        echo "The sonar server could not be reached ${error}"
+                    }
+                }
+            }
+         }
+
+        stage("Image Prune") {
+            steps {
+                imagePrune(CONTAINER_NAME)
+            }
+        }
+
+        stage('Image Build') {
+            steps {
+                imageBuild(CONTAINER_NAME, CONTAINER_TAG)
+            }
+        }
+
+       stage('Get Approval'){
+            if (userApproval() == true) {
+                // do something
+                echo "the user approved!!!"
+            } else {
+                // do something else
+                echo "failed to get user approval......"
+                currentBuild.result = 'FAILURE'
+            }
+        }
+
+        stage('Push to Docker Registry') {
+            steps {
+                echo "====> TODO:: Implement Approval."
+                pushToImage(CONTAINER_NAME, CONTAINER_TAG)
+            }
+        }
+
+        stage('Run App'){
+            steps {
+                runApp(CONTAINER_NAME, CONTAINER_TAG, DOCKER_HUB_USER, HTTP_PORT)
+            }
         }
     }
+}
 
-    stage('Push Docker Image') {
-       echo "====> TODO:: Implement Approval."
-       withCredentials([string(credentialsId: 'docker-pwd', variable: 'dockerHubPwd')]) {
-        //docker.withRegistry('https://registry.hub.docker.com', 'jenkinsDockerCredentials') {
-            sh "docker login -u ${DOCKER_USER} -p ${dockerHubPwd}"
-            //sh "docker push ${MY_DOCKER_REPO}/${IMAGE}-${IMAGE_VERSION}:${IMAGE_TAG}"
-            
+def synkScan(){
+    script {
+        try {
+            echo "start snyk scan..............."
+
+            //sh "snyk auth $snykToken"
+            snykSecurity snykInstallation: 'snyk', snykTokenId: '9c0b48e6-7f17-4844-a3aa-a6aec82a384e'
+
+            //sh "winpty docker run --rm -it --env ${SNYK_TOKEN} -v ${(PWD)}:/app snyk/snyk:maven"
+            sh 'snyk test'
+
+            echo "done snyk scan..............."
+        } catch(error){
+            echo "Snyk scan exception > Error Msg: ${error}"
         }
-        sh "docker push ${MY_DOCKER_REPO}/${IMAGE}-${IMAGE_VERSION}:${IMAGE_TAG}"
     }
+}
+
+def imagePrune(containerName){
+    script {
+        try {
+            sh "docker image prune -f"
+            sh "docker stop $containerName"
+        } catch(error){
+            echo "docker image prune exception > Error Msg: ${error}"
+        }
+    }
+}
 
 
-    def userApproval()
+def imageBuild(containerName, tag){
+    echo "Image build start.............."
+    app = docker.build("ctraore/vsoc-jdi")
+    echo "Image build complete."
+}
+
+def pushToImage(containerName, tag){
+    echo "start pushing image to dockerhub..............."
+
+    docker.withRegistry('https://registry.hub.docker.com', 'DOCKERHUB_CREDS') {
+        app.push("latest")
+	}
+    echo "*** Image push complete ***"
+}
+
+def runApp(containerName, tag, dockerHubUser, httpPort){
+    sh "docker pull $dockerHubUser/$containerName"
+    sh "docker run -d --rm -p $httpPort:$httpPort --name $containerName $dockerHubUser/$containerName:$tag"
+    echo "Application started on port: ${httpPort} (http)"
+}
+
+
+def userApproval(){
     try {
         userApproval = input(
             id: 'Proceed1', message: 'Was this successful?', parameters: [
@@ -59,7 +181,4 @@ node {
         userApproval = false
         echo "Aborted by: [${user}]"
     }
-
-
-
 }
