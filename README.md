@@ -7,6 +7,7 @@ mvn spring-boot:run
 
 -- you should see the following message: Tomcat initialized with port(s): 8000 (http) 
 
+
 -- alternate solution:
 run VSocApplication.java as springboot application
 
