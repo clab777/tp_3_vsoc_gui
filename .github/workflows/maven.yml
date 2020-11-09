@@ -23,13 +23,11 @@ jobs:
     - name: Build with Maven
       run: mvn -B package --file pom.xml
 
-  deploy:
-    runs-on: ubuntu-latest
-    steps:
-    - uses: actions/checkout@v2
-    - uses: akhileshns/heroku-deploy@v3.6.8 # This is the action
-      with:
-        heroku_api_key: ${{secrets.HEROKU_API_TOKEN}}
-        heroku_app_name: ${{secrets.HEROKU_APP_NAME}} #Must be unique in Heroku
-        heroku_email: ${{secrets.HEROKU_EMAIL}}
-        branch: "master"
+    - name: Deploy to Heroku
+      env:
+        HEROKU_API_TOKEN: ${{ secrets.HEROKU_API_TOKEN }}
+        HEROKU_APP_NAME: ${{ secrets.HEROKU_APP_NAME }}
+      if: github.ref == 'refs/heads/master' && job.status == 'success'
+      run: |
+        git remote add heroku https://heroku:$HEROKU_API_TOKEN@git.heroku.com/$HEROKU_APP_NAME.git
+        git push heroku HEAD:master -f
